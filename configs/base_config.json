@@ -1,8 +1,8 @@
 {
   "flows": [
     {
-      "local_data_input": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/media/videos",
-      "file_type_to_upload": ["audio"],
+      "entrance_filters": [],
+      "local_data_input": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/media/audios",
       "gdrive": {
         "upload_gdrive_folder_url": "https://drive.google.com/drive/folders/1fHPdgk0FeiY1kGaWj9eGHCjHICwud7cZ",
         "rclone_config_path": "C:/Users/dell/AppData/Roaming/rclone/rclone.conf"

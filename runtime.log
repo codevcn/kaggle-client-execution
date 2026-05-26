@@ -1,55 +1,55 @@
-2026-05-25 01:56:58  INFO      🚀 Khởi động Kaggle Client Execution
-2026-05-25 01:56:58  INFO         Config  : D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\configs\base_config.json
-2026-05-25 01:56:58  INFO         Tmp dir : D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp
-2026-05-25 01:56:58  INFO         Log file: D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\runtime.log
-2026-05-25 01:56:58  INFO      🗂️  Tổng số flow: 1
-2026-05-25 01:56:58  INFO      ============================================================
-2026-05-25 01:56:58  INFO      
+2026-05-26 18:24:17  INFO      🚀 Khởi động Kaggle Client Execution
+2026-05-26 18:24:17  INFO         Config  : D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\configs\base_config.json
+2026-05-26 18:24:17  INFO         Tmp dir : D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp
+2026-05-26 18:24:17  INFO         Log file: D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\runtime.log
+2026-05-26 18:24:17  INFO      🗂️  Tổng số flow: 1
+2026-05-26 18:24:17  INFO      ============================================================
+2026-05-26 18:24:17  INFO      
 ════════════════════════════════════════════════════════════
-2026-05-25 01:56:58  INFO      ▶  FLOW 1/1
-2026-05-25 01:56:58  INFO         local_data_input   : D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/media/videos
-2026-05-25 01:56:58  INFO         file_type_to_upload: ['audio', 'video']
-2026-05-25 01:56:58  INFO         gdrive_folder_url  : https://drive.google.com/drive/folders/1fHPdgk0FeiY1kGaWj9eGHCjHICwud7cZ
-2026-05-25 01:56:58  INFO         rclone_config_path : C:/Users/dell/AppData/Roaming/rclone/rclone.conf
-2026-05-25 01:56:58  INFO         notebook_to_execute: kenkunkanki/transcribe-audio-file-flow
-2026-05-25 01:56:58  INFO         credentials_path   : D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env
-2026-05-25 01:56:58  INFO      ════════════════════════════════════════════════════════════
-2026-05-25 01:56:58  INFO        ✅ Đã load 3 tài khoản Kaggle từ credentials.
-2026-05-25 01:56:58  INFO        📂 Tìm thấy 1 file phù hợp trong D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\media\videos
-2026-05-25 01:56:58  INFO      
-  ── File 1/1: 5 True Creepy Horror Stories Animated.webm ──
-2026-05-25 01:56:58  INFO        🔗 Tìm thấy rclone remote: [codevcn-dell-pc]
-2026-05-25 01:56:58  INFO        📦 Staging: 5 True Creepy Horror Stories Animated.webm  →  D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp\_staging_5 True Creepy Horror Stories Animated
-2026-05-25 01:56:58  INFO        📤 rclone sync: 5 True Creepy Horror Stories Animated.webm  →  GDrive folder ID [1fHPdgk0FeiY1kGaWj9eGHCjHICwud7cZ]
-2026-05-25 01:56:58  INFO             (file cũ trên GDrive sẽ bị xóa)
-2026-05-25 01:56:58  INFO             Lệnh: rclone sync D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp\_staging_5 True Creepy Horror Stories Animated codevcn-dell-pc: --drive-root-folder-id 1fHPdgk0FeiY1kGaWj9eGHCjHICwud7cZ --config C:/Users/dell/AppData/Roaming/rclone/rclone.conf --progress --stats-one-line --log-level INFO
-2026-05-25 01:56:59  INFO             [rclone stdout]
+2026-05-26 18:24:17  INFO      ▶  FLOW 1/1
+2026-05-26 18:24:17  INFO         entrance_filters   : []
+2026-05-26 18:24:17  INFO         local_data_input   : D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/media/audios
+2026-05-26 18:24:17  INFO         gdrive_folder_url  : https://drive.google.com/drive/folders/1fHPdgk0FeiY1kGaWj9eGHCjHICwud7cZ
+2026-05-26 18:24:17  INFO         rclone_config_path : C:/Users/dell/AppData/Roaming/rclone/rclone.conf
+2026-05-26 18:24:17  INFO         notebook_to_execute: kenkunkanki/transcribe-audio-file-flow
+2026-05-26 18:24:17  INFO         credentials_path   : D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env
+2026-05-26 18:24:17  INFO      ════════════════════════════════════════════════════════════
+2026-05-26 18:24:17  INFO        ✅ Đã load 4 tài khoản Kaggle từ credentials.
+2026-05-26 18:24:17  INFO        📂 Tìm thấy 1 file trong D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\media\audios
+2026-05-26 18:24:17  INFO      
+  ── File 1/1: 5 True Creepy Horror Stories Animated.wav ──
+2026-05-26 18:24:17  INFO        🔗 Tìm thấy rclone remote: [codevcn-dell-pc]
+2026-05-26 18:24:17  INFO        📦 Staging: 5 True Creepy Horror Stories Animated.wav  →  D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp\_staging_5 True Creepy Horror Stories Animated
+2026-05-26 18:24:17  INFO        📤 rclone sync: 5 True Creepy Horror Stories Animated.wav  →  GDrive folder ID [1fHPdgk0FeiY1kGaWj9eGHCjHICwud7cZ]
+2026-05-26 18:24:17  INFO             (file cũ trên GDrive sẽ bị xóa)
+2026-05-26 18:24:17  INFO             Lệnh: rclone sync D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp\_staging_5 True Creepy Horror Stories Animated codevcn-dell-pc: --drive-root-folder-id 1fHPdgk0FeiY1kGaWj9eGHCjHICwud7cZ --config C:/Users/dell/AppData/Roaming/rclone/rclone.conf --progress --stats-one-line --log-level INFO
+2026-05-26 18:24:19  INFO             [rclone stdout]
 0 B / 0 B, -, 0 B/s, ETA -
-2026/05/25 01:56:59 INFO  : There was nothing to transfer
+2026/05/26 18:24:19 INFO  : There was nothing to transfer
 0 B / 0 B, -, 0 B/s, ETA -0 B / 0 B, -, 0 B/s, ETA -
-2026-05-25 01:56:59  WARNING          [rclone stderr]
-2026/05/25 01:56:59 INFO  :           0 B / 0 B, -, 0 B/s, ETA -
-2026-05-25 01:56:59  INFO        ✅ Sync thành công: 5 True Creepy Horror Stories Animated.webm (file cũ trên GDrive đã được xóa)
-2026-05-25 01:56:59  INFO        🔗 GDrive folder: https://drive.google.com/drive/folders/1fHPdgk0FeiY1kGaWj9eGHCjHICwud7cZ
-2026-05-25 01:56:59  INFO        🧹 Đã xóa staging dir: _staging_5 True Creepy Horror Stories Animated
-2026-05-25 01:56:59  INFO        📁 Thư mục tạm: D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp\kenkunkanki_transcribe-audio-file-flow
-2026-05-25 01:56:59  INFO        🔽 [Bước 1] Pull metadata: kenkunkanki/transcribe-audio-file-flow
-2026-05-25 01:57:02  INFO             ✅ Source code and metadata downloaded to D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp\kenkunkanki_transcribe-audio-file-flow
-2026-05-25 01:57:02  INFO        🔽 [Bước 2] Pull notebook code: kenkunkanki/transcribe-audio-file-flow
-2026-05-25 01:57:04  INFO             ✅ Source code downloaded to D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp\kenkunkanki_transcribe-audio-file-flow\transcribe-audio-file-flow.ipynb
-2026-05-25 01:57:04  INFO             🔧 Đã chuẩn hóa machine_shape: 'None' → null
-2026-05-25 01:57:04  INFO             🌐 Đã đảm bảo enable_internet = true
-2026-05-25 01:57:04  INFO        🚀 [Bước 3] Push notebook để kích hoạt chạy: kenkunkanki/transcribe-audio-file-flow
-2026-05-25 01:57:07  INFO             ✅ Kernel version 9 successfully pushed.  Please check progress at https://www.kaggle.com/code/kenkunkanki/transcribe-audio-file-flow
-2026-05-25 01:57:07  INFO        🎉 Notebook kích hoạt thành công: kenkunkanki/transcribe-audio-file-flow
-2026-05-25 01:57:07  INFO        🧹 Đã xóa thư mục tạm: kenkunkanki_transcribe-audio-file-flow
-2026-05-25 01:57:07  INFO        ✅ Hoàn tất file 1/1: 5 True Creepy Horror Stories Animated.webm
-2026-05-25 01:57:07  INFO      
+2026-05-26 18:24:19  WARNING          [rclone stderr]
+2026/05/26 18:24:19 INFO  :           0 B / 0 B, -, 0 B/s, ETA -
+2026-05-26 18:24:19  INFO        ✅ Sync thành công: 5 True Creepy Horror Stories Animated.wav (file cũ trên GDrive đã được xóa)
+2026-05-26 18:24:19  INFO        🔗 GDrive folder: https://drive.google.com/drive/folders/1fHPdgk0FeiY1kGaWj9eGHCjHICwud7cZ
+2026-05-26 18:24:19  INFO        🧹 Đã xóa staging dir: _staging_5 True Creepy Horror Stories Animated
+2026-05-26 18:24:19  INFO        📁 Thư mục tạm: D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp\kenkunkanki_transcribe-audio-file-flow
+2026-05-26 18:24:19  INFO        🔽 [Bước 1] Pull metadata: kenkunkanki/transcribe-audio-file-flow
+2026-05-26 18:24:23  INFO             ✅ Source code and metadata downloaded to D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp\kenkunkanki_transcribe-audio-file-flow
+2026-05-26 18:24:23  INFO        🔽 [Bước 2] Pull notebook code: kenkunkanki/transcribe-audio-file-flow
+2026-05-26 18:24:25  INFO             ✅ Source code downloaded to D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp\kenkunkanki_transcribe-audio-file-flow\transcribe-audio-file-flow.ipynb
+2026-05-26 18:24:25  INFO             🔧 Đã chuẩn hóa machine_shape: 'None' → null
+2026-05-26 18:24:25  INFO             🌐 Đã đảm bảo enable_internet = true
+2026-05-26 18:24:25  INFO        🚀 [Bước 3] Push notebook để kích hoạt chạy: kenkunkanki/transcribe-audio-file-flow
+2026-05-26 18:24:28  INFO             ✅ Kernel version 13 successfully pushed.  Please check progress at https://www.kaggle.com/code/kenkunkanki/transcribe-audio-file-flow
+2026-05-26 18:24:28  INFO        🎉 Notebook kích hoạt thành công: kenkunkanki/transcribe-audio-file-flow
+2026-05-26 18:24:28  INFO        🧹 Đã xóa thư mục tạm: kenkunkanki_transcribe-audio-file-flow
+2026-05-26 18:24:28  INFO        ✅ Hoàn tất file 1/1: 5 True Creepy Horror Stories Animated.wav
+2026-05-26 18:24:28  INFO      
   📊 Flow 1 hoàn tất:
-2026-05-25 01:57:07  INFO           ✅ Thành công : 1/1
-2026-05-25 01:57:07  INFO           ❌ Thất bại   : 0/1
-2026-05-25 01:57:07  INFO      
+2026-05-26 18:24:28  INFO           ✅ Thành công : 1/1
+2026-05-26 18:24:28  INFO           ❌ Thất bại   : 0/1
+2026-05-26 18:24:28  INFO      
 ════════════════════════════════════════════════════════════
-2026-05-25 01:57:07  INFO      🏁 Đã xử lý xong toàn bộ flow.
-2026-05-25 01:57:07  INFO      ════════════════════════════════════════════════════════════
+2026-05-26 18:24:28  INFO      🏁 Đã xử lý xong toàn bộ flow.
+2026-05-26 18:24:28  INFO      ════════════════════════════════════════════════════════════
 

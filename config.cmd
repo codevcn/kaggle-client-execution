@@ -1,0 +1,1 @@
+notepad configs/base_config.json
