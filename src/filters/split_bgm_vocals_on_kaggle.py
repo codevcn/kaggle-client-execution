@@ -39,7 +39,7 @@ GDRIVE_DEST_FOLDER_URL: str = (
 )
 
 # Slug của notebook Kaggle (phần sau username)
-KAGGLE_NOTEBOOK_TO_RUN: str = "split-bgm-vocals-flow"
+KAGGLE_NOTEBOOK_TO_RUN: str = "demucs-split-bgm-vocals-flow"
 
 # Đường dẫn rclone config
 RCLONE_CONFIG_PATH: str = "C:/Users/dell/AppData/Roaming/rclone/rclone.conf"

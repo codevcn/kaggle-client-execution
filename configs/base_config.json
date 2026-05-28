@@ -1,7 +1,14 @@
 {
   "flows": [
     {
-      "entrance_filters": [],
+      "entrance_filters": [
+        {
+          "name": "extract_audio_from_video"
+        },
+        {
+          "name": "split_bgm_vocals_on_kaggle"
+        }
+      ],
       "local_data_input": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/media/audios",
       "gdrive": {
         "upload_gdrive_folder_url": "https://drive.google.com/drive/folders/1fHPdgk0FeiY1kGaWj9eGHCjHICwud7cZ",

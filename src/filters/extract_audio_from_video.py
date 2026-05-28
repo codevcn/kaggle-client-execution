@@ -40,6 +40,16 @@ def extract_audio_from_videos(input_folder_path: str, output_folder_path: str) -
     # Tạo thư mục đầu ra nếu chưa tồn tại
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Làm sạch toàn bộ file cũ trong thư mục đầu ra trước khi extract
+    existing_files = [f for f in output_dir.iterdir() if f.is_file()]
+    if existing_files:
+        print(f"Đang xóa {len(existing_files)} file cũ trong '{output_dir}'...")
+        for f in existing_files:
+            f.unlink()
+            print(f"  Đã xóa: {f.name}")
+        print("Làm sạch hoàn tất.")
+
+
     # Danh sách các định dạng video phổ biến để lọc
     video_extensions = {".mp4", ".mkv", ".avi", ".mov", ".flv", ".wmv", ".webm", ".m4v"}
 
