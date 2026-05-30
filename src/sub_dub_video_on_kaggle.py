@@ -456,23 +456,36 @@ def run_entrance_filters(entrance_filters: list[dict]) -> bool:
             return False
 
         logger.info(f"  ▶️  [{idx}/{total}] Chạy filter: {filter_name}.py")
-        result = subprocess.run(
-            [sys.executable, str(filter_file)],
-            capture_output=True,
+        process = subprocess.Popen(
+            [sys.executable, "-u", str(filter_file)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,  # Gộp chung để dễ đọc realtime
             text=True,
             encoding="utf-8",
             errors="replace",
         )
 
-        if result.stdout.strip():
-            logger.info(f"       [stdout]\n{result.stdout.strip()}")
-        if result.stderr.strip():
-            logger.warning(f"       [stderr]\n{result.stderr.strip()}")
+        try:
+            # Đọc log realtime từ tiến trình con
+            for line in process.stdout:
+                line = line.rstrip()
+                if line:
+                    logger.info(f"       [filter:{filter_name}] {line}")
+            
+            # Chờ tiến trình kết thúc tự nhiên
+            process.wait()
 
-        if result.returncode != 0:
+        except KeyboardInterrupt:
+            logger.warning(f"\n  ⚠️  Người dùng đã ngắt (Hủy) filter '{filter_name}' bằng phím tắt!")
+            process.terminate()
+            process.wait(timeout=5)
+            # Trả về False để dừng luồng chính
+            return False
+
+        if process.returncode != 0:
             logger.error(
                 f"  ❌ Filter '{filter_name}' thất bại "
-                f"(returncode={result.returncode}) — dừng flow."
+                f"(returncode={process.returncode}) — dừng flow."
             )
             return False
 
@@ -505,6 +518,15 @@ def run_all_flows(config: dict) -> None:
     logger.info("=" * 60)
 
     for flow_idx, flow in enumerate(flows, start=1):
+        title: str = flow.get("flow_title", f"Flow {flow_idx}")
+        skip: bool = flow.get("skip", False)
+
+        if skip:
+            logger.info(f"\n{'═'*60}")
+            logger.info(f"⏭️  BỎ QUA FLOW {flow_idx}/{total_flows}: {title}")
+            logger.info(f"{'═'*60}")
+            continue
+
         # ── Đọc thông tin flow ──────────────────────────────────
         entrance_filters: list[dict] = flow.get("entrance_filters", [])
         local_data_input: str = flow.get("local_data_input", "")
@@ -518,7 +540,7 @@ def run_all_flows(config: dict) -> None:
         credentials_path: str = kaggle_cfg.get("credentials_path", "")
 
         logger.info(f"\n{'═'*60}")
-        logger.info(f"▶  FLOW {flow_idx}/{total_flows}")
+        logger.info(f"▶  FLOW {flow_idx}/{total_flows}: {title}")
         logger.info(
             f"   entrance_filters   : {[f.get('name') for f in entrance_filters]}"
         )

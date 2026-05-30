@@ -1,12 +1,11 @@
 {
   "flows": [
     {
+      "skip": false,
+      "flow_title": "Tạo phụ đề & lồng tiếng cho video",
       "entrance_filters": [
         {
-          "name": "extract_audio_from_video"
-        },
-        {
-          "name": "split_bgm_vocals_on_kaggle"
+          "name": "check_keeping_remote_server_awake"
         }
       ],
       "local_data_input": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/media/audios",

@@ -35,7 +35,7 @@ INPUT_FOLDER_PATH: Path = ROOT_DIR / "media" / "audios"
 
 # GDrive folder đích (URL đầy đủ hoặc chỉ folder ID)
 GDRIVE_DEST_FOLDER_URL: str = (
-    "https://drive.google.com/drive/folders/1vE-ffrqPjfhNmyhsENrvaMjkKc-AE4qi"
+    "https://drive.google.com/drive/folders/1QMWUxtQHc5hS5Mad_J-1NbPM8XDCpfua"
 )
 
 # Slug của notebook Kaggle (phần sau username)
