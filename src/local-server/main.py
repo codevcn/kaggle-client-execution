@@ -11,8 +11,8 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse, HTMLResponse
 from pydantic import BaseModel
 
 # Thiết lập encoding UTF-8 cho console để in tiếng Việt không bị lỗi trên Windows
@@ -46,8 +46,18 @@ try:
 except ValueError:
     MS_INTERVAL_CHECK_REMOTE_SERVER_ALIVE = 5000
 
-CLONED_DATA_LOCAL_DIR_PATH = os.getenv("CLONED_DATA_LOCAL_DIR_PATH", "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/media/cloned-data")
-RCLONE_CONFIG_PATH = os.getenv("RCLONE_CONFIG_PATH", "C:/Users/dell/AppData/Roaming/rclone/rclone.conf")
+CLONED_DATA_LOCAL_DIR_PATH = os.getenv(
+    "CLONED_DATA_LOCAL_DIR_PATH",
+    "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/media/cloned-data",
+)
+RCLONE_CONFIG_PATH = os.getenv(
+    "RCLONE_CONFIG_PATH", "C:/Users/dell/AppData/Roaming/rclone/rclone.conf"
+)
+
+CONFIG_JSON_PATH = (
+    Path(__file__).resolve().parent.parent.parent / "configs" / "base_config.json"
+)
+CONFIG_HTML_PATH = Path(__file__).resolve().parent / "config.html"
 
 # Thiết lập logging định dạng trực quan cho Console
 logging.basicConfig(
@@ -125,56 +135,62 @@ def extract_gdrive_id(url: str) -> str:
         return match.group(1)
     return ""
 
+
 def get_rclone_remote_name(config_path: str) -> str:
     cfg = Path(config_path)
     if not cfg.exists():
-        return "gdrive" # Default to gdrive if file not found
+        return "gdrive"  # Default to gdrive if file not found
     for line in cfg.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if line.startswith("[") and line.endswith("]"):
             return line[1:-1]
     return "gdrive"
 
+
 async def handle_rclone_downloads(urls_to_handle: list):
     if not urls_to_handle:
         return
-    
+
     # Tạo folder con với format {date.now()}
     now_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     target_dir = Path(CLONED_DATA_LOCAL_DIR_PATH) / now_str
     target_dir.mkdir(parents=True, exist_ok=True)
-    
+
     logger.info(f"📂 [RCLONE] Đã tạo thư mục nhận data: {target_dir}")
     remote_name = get_rclone_remote_name(RCLONE_CONFIG_PATH)
-    
+
     for url in urls_to_handle:
         folder_id = extract_gdrive_id(url)
         if not folder_id:
             logger.warning(f"⚠️ [RCLONE] Không thể trích xuất folder ID từ URL: {url}")
             continue
-            
+
         logger.info(f"⬇️ [RCLONE] Đang tải data từ folder ID: {folder_id}...")
-        
+
         # rclone command using drive root folder ID
         cmd = [
-            "rclone", "copy",
+            "rclone",
+            "copy",
             f"--drive-root-folder-id={folder_id}",
-            f"{remote_name}:", str(target_dir),
-            "--config", RCLONE_CONFIG_PATH,
-            "-v"
+            f"{remote_name}:",
+            str(target_dir),
+            "--config",
+            RCLONE_CONFIG_PATH,
+            "-v",
         ]
-        
+
         process = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT
+            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT
         )
-        
+
         stdout, _ = await process.communicate()
         if process.returncode == 0:
             logger.info(f"✅ [RCLONE] Tải data thành công từ {url}")
         else:
-            logger.error(f"❌ [RCLONE] Lỗi khi tải data từ {url}. Output:\n{stdout.decode(errors='replace')}")
+            logger.error(
+                f"❌ [RCLONE] Lỗi khi tải data từ {url}. Output:\n{stdout.decode(errors='replace')}"
+            )
+
 
 async def receive_loop(websocket):
     """
@@ -305,6 +321,53 @@ class TestPayload(BaseModel):
     data: Optional[dict] = None
 
 
+@app.get("/config", response_class=HTMLResponse)
+def get_config_page():
+    """Trả về giao diện HTML để chỉnh sửa config"""
+    if not CONFIG_HTML_PATH.exists():
+        raise HTTPException(status_code=404, detail="Không tìm thấy file config.html")
+    return CONFIG_HTML_PATH.read_text(encoding="utf-8")
+
+
+@app.get("/api/configs")
+def get_configs():
+    """Trả về nội dung file base_config.json"""
+    if not CONFIG_JSON_PATH.exists():
+        return {"flows": []}
+    try:
+        data = json.loads(CONFIG_JSON_PATH.read_text(encoding="utf-8"))
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi đọc file config: {str(e)}")
+
+
+@app.get("/api/available-filters")
+def get_available_filters():
+    """Quét thư mục src/filters và trả về danh sách tên filter"""
+    filters_dir = Path(__file__).resolve().parent.parent / "filters"
+    if not filters_dir.exists():
+        return []
+    filters = []
+    for f in filters_dir.iterdir():
+        if f.is_file() and f.name.endswith(".py") and f.name != "__init__.py":
+            filters.append(f.stem)
+    return sorted(filters)
+
+
+@app.post("/api/configs")
+async def save_configs(request: Request):
+    """Lưu data JSON vào file base_config.json"""
+    try:
+        data = await request.json()
+        CONFIG_JSON_PATH.parent.mkdir(parents=True, exist_ok=True)
+        CONFIG_JSON_PATH.write_text(
+            json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+        return {"success": True, "message": "Đã lưu cấu hình"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi lưu file config: {str(e)}")
+
+
 @app.get("/")
 def root():
     """
@@ -356,5 +419,6 @@ if __name__ == "__main__":
         port = 8000
 
     logger.info(f"🚀 Khởi động Local FastAPI Server tại http://{host}:{port}")
+    logger.info(f"🔗 Trang cấu hình: http://{host}:{port}/config")
     # Chạy uvicorn với tính năng auto-reload
     uvicorn.run("main:app", host=host, port=port, reload=True)

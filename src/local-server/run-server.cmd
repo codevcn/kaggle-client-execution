@@ -2,8 +2,9 @@
 title Local FastAPI Server (Kaggle Client Execution)
 chcp 65001 >nul
 
+setlocal
 REM Di chuyen vao thu muc chua file .cmd nay (luu lai vi tri cu)
-pushd "%~dp0"
+cd /d "%~dp0"
 
 echo ================================================================
 echo           KAGLE CLIENT EXECUTION - LOCAL SERVER
@@ -28,7 +29,6 @@ if %errorlevel% neq 0 (
     pip install fastapi uvicorn websockets python-dotenv
     if %errorlevel% neq 0 (
         echo [SETUP] [LỖI] Không thể tự động cài đặt thư viện. Vui lòng kiểm tra kết nối mạng và pip!
-        popd
         pause
         exit /b 1
     )
@@ -45,5 +45,4 @@ python main.py
 echo ================================================================
 echo.
 echo [RUN] Server đã dừng.
-popd
 pause
