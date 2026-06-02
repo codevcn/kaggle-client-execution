@@ -1,0 +1,5 @@
+# Khai báo các thư viện cần thiết cho dự án
+# Ví dụ:
+# requests==2.31.0
+# python-dotenv==1.0.0
+nbformat

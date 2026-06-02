@@ -147,7 +147,7 @@ def run_all_flows(config: dict) -> None:
             logger.warning(f"  ⚠️  Chưa có kịch bản xử lý cho flow: '{title}'")
 
     logger.info(f"\n{'═'*60}")
-    logger.info("🏁 Đã xử lý xong toàn bộ flow.")
+    logger.info("🏁 Đã xử lý xong tất cả các flow.")
     logger.info(f"{'═'*60}\n")
 
 
