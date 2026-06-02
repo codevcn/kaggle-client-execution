@@ -10,6 +10,8 @@ from datetime import datetime
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
+import urllib.request
+import urllib.parse
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, HTMLResponse
@@ -59,6 +61,9 @@ CONFIG_JSON_PATH = (
 )
 CONFIG_HTML_PATH = Path(__file__).resolve().parent / "config.html"
 
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
 # Thiết lập logging định dạng trực quan cho Console
 logging.basicConfig(
     level=logging.INFO,
@@ -83,6 +88,27 @@ status_tracker = ConnectionStatus()
 # ─────────────────────────────────────────────
 # BACKGROUND WORKER (WEBSOCKET CLIENT & PINGER)
 # ─────────────────────────────────────────────
+
+
+async def send_telegram_message(message: str):
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        logger.warning("⚠️ Không thể gửi Telegram vì thiếu cấu hình TELEGRAM_BOT_TOKEN hoặc TELEGRAM_CHAT_ID.")
+        return
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    data = urllib.parse.urlencode({
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": message
+    }).encode("utf-8")
+    
+    try:
+        def do_request():
+            req = urllib.request.Request(url, data=data)
+            with urllib.request.urlopen(req) as response:
+                pass
+        await asyncio.to_thread(do_request)
+        logger.info("📩 Đã gửi thông báo Telegram thành công.")
+    except Exception as e:
+        logger.error(f"❌ Lỗi khi gửi thông báo Telegram: {e}")
 
 
 async def ping_loop(websocket):
@@ -191,6 +217,10 @@ async def handle_rclone_downloads(urls_to_handle: list):
                 f"❌ [RCLONE] Lỗi khi tải data từ {url}. Output:\n{stdout.decode(errors='replace')}"
             )
 
+    # Gửi thông báo khi hoàn tất toàn bộ tiến trình tải
+    msg = f"✅ [LOCAL SERVER] Đã hoàn tất tải toàn bộ {len(urls_to_handle)} thư mục GDrive.\n📁 Lưu tại: {target_dir}"
+    await send_telegram_message(msg)
+
 
 async def receive_loop(websocket):
     """
@@ -215,6 +245,10 @@ async def receive_loop(websocket):
                 action = data.get("action")
                 urls_to_handle = data.get("urls_to_handle")
                 if action == "handle" and isinstance(urls_to_handle, list):
+                    # Gửi thông báo Telegram khi bắt đầu
+                    msg = f"🚀 [LOCAL SERVER] Nhận yêu cầu tải data (action: handle).\n🔗 Số lượng folder: {len(urls_to_handle)}\n" + "\n".join(urls_to_handle)
+                    asyncio.create_task(send_telegram_message(msg))
+                    
                     # Khởi chạy background task rclone để không block vòng lặp nhận tin nhắn
                     asyncio.create_task(handle_rclone_downloads(urls_to_handle))
 
