@@ -1,7 +1,4 @@
 .env
-/media/videos
-/media/audios
-/media/images
-/media/others/music-videos
+/media
 .venv
 __pycache__
