@@ -1,27 +1,28 @@
-2026-06-03 02:14:43  INFO      🚀 Khởi động Kaggle Client Execution
-2026-06-03 02:14:43  INFO         Config  : D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\configs\base_config.json
-2026-06-03 02:14:43  INFO         Tmp dir : D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp
-2026-06-03 02:14:43  INFO         Log file: D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\runtime.log
-2026-06-03 02:14:43  INFO      🗂️  Tổng số flow: 2
-2026-06-03 02:14:43  INFO      ============================================================
-2026-06-03 02:14:43  INFO      
+2026-06-03 23:14:04  INFO      🚀 Khởi động Kaggle Client Execution
+2026-06-03 23:14:04  INFO         Config  : D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\configs\base_config.json
+2026-06-03 23:14:04  INFO         Tmp dir : D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp
+2026-06-03 23:14:04  INFO         Log file: D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\runtime.log
+2026-06-03 23:14:04  INFO      🗂️  Tổng số flow: 2
+2026-06-03 23:14:04  INFO      ============================================================
+2026-06-03 23:14:04  INFO      
 ════════════════════════════════════════════════════════════
-2026-06-03 02:14:43  INFO      ⏭️  BỎ QUA FLOW 1/2: Tạo phụ đề & lồng tiếng cho video
-2026-06-03 02:14:43  INFO      ════════════════════════════════════════════════════════════
-2026-06-03 02:14:43  INFO      
+2026-06-03 23:14:04  INFO      ▶  FLOW 1/2: Tạo phụ đề & lồng tiếng cho video
+2026-06-03 23:14:04  INFO         entrance_filters   : ['check_keeping_remote_server_awake', 'run_local_server']
+2026-06-03 23:14:04  INFO        🔍 Chạy 2 entrance filter(s)...
+2026-06-03 23:14:04  INFO        ▶️  [1/2] Chạy filter: check_keeping_remote_server_awake.py
+2026-06-03 23:14:04  INFO             [filter:check_keeping_remote_server_awake] [filter:check_keeping_remote_server_awake]  ============================================================
+2026-06-03 23:14:04  INFO             [filter:check_keeping_remote_server_awake] [filter:check_keeping_remote_server_awake]  🚦 BẮT ĐẦU FILTER: check_keeping_remote_server_awake
+2026-06-03 23:14:04  INFO             [filter:check_keeping_remote_server_awake] [filter:check_keeping_remote_server_awake]  ============================================================
+2026-06-03 23:14:04  INFO             [filter:check_keeping_remote_server_awake] [filter:check_keeping_remote_server_awake]  ❌ FILTER THẤT BẠI — Bạn chưa chạy keep-awake cho remote server, hãy chạy nó trước khi thực thi flow.
+2026-06-03 23:14:04  INFO             [filter:check_keeping_remote_server_awake] [filter:check_keeping_remote_server_awake]  👉 Chạy keep-awake bằng câu lệnh: mod run keep-awake
+2026-06-03 23:14:04  ERROR       ❌ Filter 'check_keeping_remote_server_awake' thất bại (returncode=1) — dừng flow.
+2026-06-03 23:14:04  ERROR       ❌ Flow 1: Entrance filter thất bại — bỏ qua flow này.
+2026-06-03 23:14:04  INFO      
 ════════════════════════════════════════════════════════════
-2026-06-03 02:14:43  INFO      ▶  FLOW 2/2: Gắn subtitle cho music video
-2026-06-03 02:14:43  INFO         entrance_filters   : ['check_keeping_remote_server_awake', 'run_local_server', 'check_valid_file_pairs', 'check_if_video_file_exists']
-2026-06-03 02:14:43  INFO        🔍 Chạy 4 entrance filter(s)...
-2026-06-03 02:14:43  INFO        ▶️  [1/4] Chạy filter: check_keeping_remote_server_awake.py
-2026-06-03 02:14:43  INFO             [filter:check_keeping_remote_server_awake] Traceback (most recent call last):
-2026-06-03 02:14:43  INFO             [filter:check_keeping_remote_server_awake]   File "D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\src\filters\check_keeping_remote_server_awake.py", line 9, in <module>
-2026-06-03 02:14:43  INFO             [filter:check_keeping_remote_server_awake]     import psutil
-2026-06-03 02:14:43  INFO             [filter:check_keeping_remote_server_awake] ModuleNotFoundError: No module named 'psutil'
-2026-06-03 02:14:43  ERROR       ❌ Filter 'check_keeping_remote_server_awake' thất bại (returncode=1) — dừng flow.
-2026-06-03 02:14:43  ERROR       ❌ Flow 2: Entrance filter thất bại — bỏ qua flow này.
-2026-06-03 02:14:43  INFO      
+2026-06-03 23:14:04  INFO      ⏭️  BỎ QUA FLOW 2/2: Gắn subtitle cho music video
+2026-06-03 23:14:04  INFO      ════════════════════════════════════════════════════════════
+2026-06-03 23:14:04  INFO      
 ════════════════════════════════════════════════════════════
-2026-06-03 02:14:43  INFO      🏁 Đã xử lý xong tất cả các flow.
-2026-06-03 02:14:43  INFO      ════════════════════════════════════════════════════════════
+2026-06-03 23:14:04  INFO      🏁 Đã xử lý xong tất cả các flow.
+2026-06-03 23:14:04  INFO      ════════════════════════════════════════════════════════════
 

@@ -1,7 +1,7 @@
 {
   "flows": [
     {
-      "skip": true,
+      "skip": false,
       "flow_title": "Tạo phụ đề & lồng tiếng cho video",
       "entrance_filters": [
         {
@@ -9,29 +9,49 @@
         },
         {
           "name": "run_local_server"
-        },
-        {
-          "name": "extract_audio_from_video"
-        },
-        {
-          "name": "split_bgm_vocals_on_kaggle"
         }
       ],
-      "local_data_input": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/media/audios",
+      "local_data_input": "D:\\D-Jobs\\ae-B6\\TikTok-Beta\\japan\\re-up\\phase nuôi acc\\thời kỳ xưa trên Trái Đất\\data-input",
       "gdrive": {
-        "upload_gdrive_folder_url": "https://drive.google.com/drive/folders/1fHPdgk0FeiY1kGaWj9eGHCjHICwud7cZ",
+        "upload_gdrive_folder_url": "https://drive.google.com/drive/folders/1-nPUSPBIgzgCzAmbdbtGvbUl8BKDv6xq",
         "rclone_config_path": "C:/Users/dell/AppData/Roaming/rclone/rclone.conf"
       },
       "kaggle": {
-        "notebook_to_execute": "kenkunkanki/transcribe-audio-file-flow",
-        "edit_vars": {
-          "CURRENT_JOB_ID": "sub_dub_documentary-flims-01"
-        },
-        "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env"
+        "notbooks": [
+          {
+            " ": "kenkunkanki/transcribe-audio-file-flow",
+            "edit_vars": {
+              "CURRENT_JOB_ID": "sub-dub-documentary-flims-01",
+              "DATA_INPUT_GDRIVE_DIR_URL": "https://drive.google.com/drive/folders/1Qaxq95EICRlXkcaIGzOe_GfzurSvuuW7"
+            },
+            "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
+            "to_execute": false
+          },
+          {
+            "notebook_to_execute": "hipbiquang/translate-srt-flow",
+            "edit_vars": {
+              "CURRENT_JOB_ID": "sub-dub-documentary-flims-01",
+              "INPUT_DATA_GDRIVE_DIR_URL": "https://drive.google.com/open?id=1-nPUSPBIgzgCzAmbdbtGvbUl8BKDv6xq",
+              "MAX_GAP_BETWEEN_BLOCKS_IN_MS": 700
+            },
+            "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
+            "to_execute": true
+          },
+          {
+            "notebook_to_execute": "vanphongg/omnivoice-speech-flow",
+            "edit_vars": {
+              "CURRENT_JOB_ID": "sub-dub-documentary-flims-01",
+              "DATA_INPUT_DRIVE_FOLDER_LINK": "https://drive.google.com/open?id=1-nPUSPBIgzgCzAmbdbtGvbUl8BKDv6xq",
+              "REF_AUDIO_GDRIVE_FOLDER_URL": "https://drive.google.com/drive/folders/1Su0cEIZpWYguSdbWlQTlzgEM6T17ml6b?usp=sharing"
+            },
+            "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
+            "to_execute": false
+          }
+        ]
       }
     },
     {
-      "skip": false,
+      "skip": true,
       "flow_title": "Gắn subtitle cho music video",
       "entrance_filters": [
         {
@@ -53,12 +73,51 @@
         "rclone_config_path": "C:/Users/dell/AppData/Roaming/rclone/rclone.conf"
       },
       "kaggle": {
-        "notebook_to_execute": "kenkunkanki/assign-timestamp-for-each-word-flow",
-        "edit_vars": {
-          "CURRENT_JOB_ID": "burn_sub_music-videos-01"
-        },
-        "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env"
+        "notbooks": [
+          {
+            "notebook_to_execute": "kenkunkanki/assign-timestamp-for-each-word-flow",
+            "edit_vars": {
+              "CURRENT_JOB_ID": "burn-sub-music-videos-01"
+            },
+            "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
+            "to_execute": true
+          },
+          {
+            "notebook_to_execute": "hipbiquang/display-words-on-video-by-timestamp",
+            "edit_vars": {
+              "CURRENT_JOB_ID": "burn-sub-music-videos-01"
+            },
+            "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
+            "to_execute": false
+          }
+        ]
       }
+    }
+  ],
+  "available_gdrive_urls": [
+    {
+      "name": "input-movie-data",
+      "url": "https://drive.google.com/drive/folders/1Qaxq95EICRlXkcaIGzOe_GfzurSvuuW7"
+    },
+    {
+      "name": "movie-bridged-data",
+      "url": "https://drive.google.com/drive/folders/1-nPUSPBIgzgCzAmbdbtGvbUl8BKDv6xq"
+    },
+    {
+      "name": "input-assign-words-data",
+      "url": "https://drive.google.com/drive/folders/1OKg3GUr8HpjlvzrcnQzOxxBaLVJvmGNZ"
+    },
+    {
+      "name": "assigned-words-bridged-data",
+      "url": "https://drive.google.com/drive/folders/1ePg6ZSn525yLNw0pJP9QBN9QHz058ShK"
+    },
+    {
+      "name": "input-split-bgm-vocals",
+      "url": "https://drive.google.com/drive/folders/1QMWUxtQHc5hS5Mad_J-1NbPM8XDCpfua"
+    },
+    {
+      "name": "split-bridged-data",
+      "url": "https://drive.google.com/drive/folders/104AVYshP_QVhGPHIkxfpBYqYiliDuowq"
     }
   ]
 }

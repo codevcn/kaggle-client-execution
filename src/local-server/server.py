@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import time
 from datetime import datetime
 from contextlib import asynccontextmanager
@@ -43,10 +44,10 @@ REMOTE_WS_URL = os.getenv(
 )
 try:
     MS_INTERVAL_CHECK_REMOTE_SERVER_ALIVE = int(
-        os.getenv("MS_INTERVAL_CHECK_REMOTE_SERVER_ALIVE", "5000")
+        os.getenv("MS_INTERVAL_CHECK_REMOTE_SERVER_ALIVE", "10000")
     )
 except ValueError:
-    MS_INTERVAL_CHECK_REMOTE_SERVER_ALIVE = 5000
+    MS_INTERVAL_CHECK_REMOTE_SERVER_ALIVE = 10000
 
 CLONED_DATA_LOCAL_DIR_PATH = os.getenv(
     "CLONED_DATA_LOCAL_DIR_PATH",
@@ -59,7 +60,7 @@ RCLONE_CONFIG_PATH = os.getenv(
 CONFIG_JSON_PATH = (
     Path(__file__).resolve().parent.parent.parent / "configs" / "base_config.json"
 )
-CONFIG_HTML_PATH = Path(__file__).resolve().parent / "config.html"
+MANAGE_HTML_PATH = Path(__file__).resolve().parent / "manage.html"
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
@@ -86,25 +87,143 @@ status_tracker = ConnectionStatus()
 
 
 # ─────────────────────────────────────────────
+# BỘ QUẢN LÝ TIẾN TRÌNH CHẠY FLOW (SUBPROCESS ORCHESTRATOR)
+# ─────────────────────────────────────────────
+class FlowExecutionManager:
+    def __init__(self):
+        self.process = None
+        self.logs = []
+        self.thread = None
+
+    async def run(self):
+        if self.is_running():
+            return False
+
+        self.logs = []
+
+        # Thư mục gốc của project (chứa flow.cmd và src/main.py)
+        base_dir = Path(__file__).resolve().parent.parent.parent
+        flow_cmd = base_dir / "flow.cmd"
+
+        # ── Xây dựng môi trường sạch, KHÔNG kế thừa VIRTUAL_ENV / PYTHONPATH
+        # của local-server để tránh xung đột. flow.cmd sẽ tự activate .venv.
+        clean_env = os.environ.copy()
+        for var in ("VIRTUAL_ENV", "PYTHONPATH", "PYTHONHOME"):
+            clean_env.pop(var, None)
+        # Loại bỏ đường dẫn .venv/Scripts khỏi PATH để python gốc hệ thống được dùng,
+        # sau đó flow.cmd tự kích hoạt .venv đúng cách.
+        path_parts = clean_env.get("PATH", "").split(os.pathsep)
+        venv_scripts = str(base_dir / ".venv" / "Scripts").lower()
+        clean_env["PATH"] = os.pathsep.join(
+            p for p in path_parts if p.lower() != venv_scripts
+        )
+        clean_env["PYTHONIOENCODING"] = "utf-8"
+        clean_env["PYTHONUNBUFFERED"] = "1"
+
+        try:
+            if flow_cmd.exists():
+                # Chạy flow.cmd qua cmd /c — giống như người dùng chạy tay từ terminal
+                cmd = ["cmd", "/c", str(flow_cmd)]
+            else:
+                # Fallback: chạy trực tiếp src/main.py nếu flow.cmd không tồn tại
+                logger.warning("⚠️ Không tìm thấy flow.cmd, fallback sang python src/main.py")
+                cmd = ["python", "-u", str(base_dir / "src" / "main.py")]
+
+            logger.info(f"▶️ [FLOW] Khởi chạy process mới: {' '.join(cmd)}")
+            logger.info(f"   Thư mục làm việc: {base_dir}")
+
+            self.process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                cwd=str(base_dir),
+                env=clean_env,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                bufsize=1,
+                # CREATE_NEW_PROCESS_GROUP: process con có group riêng,
+                # không bị tắt khi local-server nhận Ctrl+C
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+            )
+        except Exception as e:
+            self.logs.append(f"[SYSTEM ERROR] Không thể khởi chạy tiến trình: {str(e)}")
+            logger.error(f"❌ [FLOW] Lỗi khởi chạy: {e}")
+            return False
+
+        self.thread = threading.Thread(target=self._read_logs, daemon=True)
+        self.thread.start()
+        return True
+
+    def _read_logs(self):
+        # Đọc từng dòng text stream từ stdout của subprocess
+        for line in iter(self.process.stdout.readline, ""):
+            stripped_line = line.rstrip("\r\n")
+            self.logs.append(stripped_line)
+            # In thẳng ra console của local-server để user theo dõi trực tiếp
+            sys.stdout.write(stripped_line + "\n")
+            sys.stdout.flush()
+        self.process.stdout.close()
+        self.process.wait()
+
+    def is_running(self) -> bool:
+        return self.process is not None and self.process.poll() is None
+
+    @property
+    def returncode(self) -> Optional[int]:
+        if self.process:
+            return self.process.poll()
+        return None
+
+    async def stop(self):
+        if not self.is_running():
+            return
+
+        try:
+            # Gửi CTRL_BREAK_EVENT cho process group riêng (Windows)
+            self.process.send_signal(subprocess.signal.CTRL_BREAK_EVENT)
+            for _ in range(50):
+                if not self.is_running():
+                    break
+                await asyncio.sleep(0.1)
+            if self.is_running():
+                self.process.terminate()
+            for _ in range(30):
+                if not self.is_running():
+                    break
+                await asyncio.sleep(0.1)
+            if self.is_running():
+                self.process.kill()
+        except Exception as e:
+            self.logs.append(f"[SYSTEM ERROR] Lỗi khi ngắt tiến trình: {str(e)}")
+
+
+flow_manager = FlowExecutionManager()
+
+
+# ─────────────────────────────────────────────
 # BACKGROUND WORKER (WEBSOCKET CLIENT & PINGER)
 # ─────────────────────────────────────────────
 
 
 async def send_telegram_message(message: str):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-        logger.warning("⚠️ Không thể gửi Telegram vì thiếu cấu hình TELEGRAM_BOT_TOKEN hoặc TELEGRAM_CHAT_ID.")
+        logger.warning(
+            "⚠️ Không thể gửi Telegram vì thiếu cấu hình TELEGRAM_BOT_TOKEN hoặc TELEGRAM_CHAT_ID."
+        )
         return
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    data = urllib.parse.urlencode({
-        "chat_id": TELEGRAM_CHAT_ID,
-        "text": message
-    }).encode("utf-8")
-    
+    data = urllib.parse.urlencode(
+        {"chat_id": TELEGRAM_CHAT_ID, "text": message}
+    ).encode("utf-8")
+
     try:
+
         def do_request():
             req = urllib.request.Request(url, data=data)
             with urllib.request.urlopen(req) as response:
                 pass
+
         await asyncio.to_thread(do_request)
         logger.info("📩 Đã gửi thông báo Telegram thành công.")
     except Exception as e:
@@ -205,16 +324,22 @@ async def handle_rclone_downloads(urls_to_handle: list):
             "-v",
         ]
 
-        process = await asyncio.create_subprocess_exec(
-            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT
-        )
+        def run_rclone():
+            return subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                errors="replace",
+            )
 
-        stdout, _ = await process.communicate()
+        process = await asyncio.to_thread(run_rclone)
+
         if process.returncode == 0:
             logger.info(f"✅ [RCLONE] Tải data thành công từ {url}")
         else:
             logger.error(
-                f"❌ [RCLONE] Lỗi khi tải data từ {url}. Output:\n{stdout.decode(errors='replace')}"
+                f"❌ [RCLONE] Lỗi khi tải data từ {url}. Output:\n{process.stdout}"
             )
 
     # Gửi thông báo khi hoàn tất toàn bộ tiến trình tải
@@ -246,9 +371,12 @@ async def receive_loop(websocket):
                 urls_to_handle = data.get("urls_to_handle")
                 if action == "handle" and isinstance(urls_to_handle, list):
                     # Gửi thông báo Telegram khi bắt đầu
-                    msg = f"🚀 [LOCAL SERVER] Nhận yêu cầu tải data (action: handle).\n🔗 Số lượng folder: {len(urls_to_handle)}\n" + "\n".join(urls_to_handle)
+                    msg = (
+                        f"🚀 [LOCAL SERVER] Nhận yêu cầu tải data (action: handle).\n🔗 Số lượng folder: {len(urls_to_handle)}\n"
+                        + "\n".join(urls_to_handle)
+                    )
                     asyncio.create_task(send_telegram_message(msg))
-                    
+
                     # Khởi chạy background task rclone để không block vòng lặp nhận tin nhắn
                     asyncio.create_task(handle_rclone_downloads(urls_to_handle))
 
@@ -327,12 +455,17 @@ async def lifespan(app: FastAPI):
     # KHI KHỞI ĐỘNG SERVER: Chạy background task kết nối WebSocket
     worker_task = asyncio.create_task(websocket_client_worker())
     yield
-    # KHI TẮT SERVER: Huỷ background task
+    # KHI TẮT SERVER: Huỷ background task và dừng các flow con đang chạy
     worker_task.cancel()
     try:
         await worker_task
     except asyncio.CancelledError:
         pass
+
+    if flow_manager.is_running():
+        logger.info("⏹️ Đang dừng tiến trình chạy flow...")
+        await flow_manager.stop()
+
     logger.info("⏹️ Local Server đã dừng.")
 
 
@@ -355,12 +488,45 @@ class TestPayload(BaseModel):
     data: Optional[dict] = None
 
 
-@app.get("/config", response_class=HTMLResponse)
-def get_config_page():
-    """Trả về giao diện HTML để chỉnh sửa config"""
-    if not CONFIG_HTML_PATH.exists():
-        raise HTTPException(status_code=404, detail="Không tìm thấy file config.html")
-    return CONFIG_HTML_PATH.read_text(encoding="utf-8")
+@app.get("/manage", response_class=HTMLResponse)
+def get_manage_page():
+    """Trả về giao diện HTML để quản lý config và chạy flow"""
+    if not MANAGE_HTML_PATH.exists():
+        raise HTTPException(status_code=404, detail="Không tìm thấy file manage.html")
+    return MANAGE_HTML_PATH.read_text(encoding="utf-8")
+
+
+@app.post("/api/run-flows")
+async def run_flows():
+    """Khởi chạy tất cả flow bằng orchestrator chính"""
+    if flow_manager.is_running():
+        raise HTTPException(
+            status_code=400, detail="Một tiến trình chạy flow đang diễn ra."
+        )
+    success = await flow_manager.run()
+    if not success:
+        raise HTTPException(status_code=500, detail="Không thể khởi chạy các flow.")
+    return {"success": True, "message": "Bắt đầu chạy tất cả flow."}
+
+
+@app.get("/api/flow-status")
+def get_flow_status(offset: int = 0):
+    """Lấy trạng thái và các dòng log mới của tiến trình chạy flow"""
+    logs = flow_manager.logs[offset:]
+    return {
+        "is_running": flow_manager.is_running(),
+        "returncode": flow_manager.returncode,
+        "logs": logs,
+    }
+
+
+@app.post("/api/stop-flows")
+async def stop_flows():
+    """Dừng khẩn cấp tiến trình chạy flow"""
+    if not flow_manager.is_running():
+        return {"success": True, "message": "Không có tiến trình nào đang chạy."}
+    await flow_manager.stop()
+    return {"success": True, "message": "Đã ngắt tiến trình chạy flow."}
 
 
 @app.get("/api/configs")
@@ -453,6 +619,6 @@ if __name__ == "__main__":
         port = 8000
 
     logger.info(f"🚀 Khởi động Local FastAPI Server tại http://{host}:{port}")
-    logger.info(f"🔗 Trang cấu hình: http://{host}:{port}/config")
+    logger.info(f"🔗 Trang quản lý: http://{host}:{port}/manage")
     # Chạy uvicorn với tính năng auto-reload
-    uvicorn.run("main:app", host=host, port=port, reload=True)
+    uvicorn.run("server:app", host=host, port=port, reload=True)

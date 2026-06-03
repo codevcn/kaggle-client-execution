@@ -41,7 +41,7 @@ echo.
 REM Khoi chay Local Server
 echo [RUN] Đang khởi chạy Local Server...
 echo ================================================================
-python main.py
+python server.py
 echo ================================================================
 echo.
 echo [RUN] Server đã dừng.

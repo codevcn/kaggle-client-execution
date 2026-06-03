@@ -300,16 +300,34 @@ def run_feature(flow: dict, flow_idx: int, total_flows: int, tmp_dir: Path) -> N
     gdrive_folder_url: str = gdrive_cfg.get("upload_gdrive_folder_url", "")
     rclone_config_path: str = gdrive_cfg.get("rclone_config_path", "")
 
+    # ── Đọc cấu trúc kaggle mới: { "notbooks": [...] } ────────────────────
     kaggle_cfg: dict = flow.get("kaggle", {})
-    notebook_to_execute: str = kaggle_cfg.get("notebook_to_execute", "")
-    credentials_path: str = kaggle_cfg.get("credentials_path", "")
-    edit_vars: dict = kaggle_cfg.get("edit_vars", {})
+    notebooks: list = kaggle_cfg.get("notbooks", [])
+
+    # Tìm notebook duy nhất có to_execute = true
+    active_notebook: dict | None = None
+    for nb in notebooks:
+        if nb.get("to_execute") is True:
+            active_notebook = nb
+            break
+
+    if active_notebook is None:
+        logger.error(
+            f"  ❌ Flow {flow_idx}: Không tìm thấy notebook nào có 'to_execute: true' "
+            f"trong kaggle.notbooks — bỏ qua flow này."
+        )
+        return
+
+    notebook_to_execute: str = active_notebook.get("notebook_to_execute", "")
+    credentials_path: str = active_notebook.get("credentials_path", "")
+    edit_vars: dict = active_notebook.get("edit_vars", {})
 
     logger.info(f"   local_data_input   : {local_data_input}")
     logger.info(f"   gdrive_folder_url  : {gdrive_folder_url}")
     logger.info(f"   rclone_config_path : {rclone_config_path}")
-    logger.info(f"   notebook_to_execute: {notebook_to_execute}")
+    logger.info(f"   notebook_to_execute: {notebook_to_execute}  [to_execute=true]")
     logger.info(f"   credentials_path   : {credentials_path}")
+    logger.info(f"   Tổng notebooks trong flow: {len(notebooks)} (chỉ 1 được chạy)")
     logger.info(f"{'═'*60}")
 
     missing = []
@@ -320,9 +338,9 @@ def run_feature(flow: dict, flow_idx: int, total_flows: int, tmp_dir: Path) -> N
     if not rclone_config_path:
         missing.append("gdrive.rclone_config_path")
     if not notebook_to_execute:
-        missing.append("kaggle.notebook_to_execute")
+        missing.append("kaggle.notbooks[to_execute].notebook_to_execute")
     if not credentials_path:
-        missing.append("kaggle.credentials_path")
+        missing.append("kaggle.notbooks[to_execute].credentials_path")
 
     if missing:
         logger.error(f"  ❌ Flow {flow_idx}: Thiếu các trường bắt buộc: {missing} — bỏ qua flow này.")
