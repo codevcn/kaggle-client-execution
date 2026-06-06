@@ -122,12 +122,18 @@ class FlowExecutionManager:
                 await asyncio.sleep(0.1)
 
             if self.is_running():
-                self.process.terminate()
+                # Trên Windows, terminate() chỉ diệt process cha. 
+                # Dùng taskkill /T để diệt toàn bộ process tree (tránh rác rclone, kaggle cli).
+                subprocess.run(
+                    ["taskkill", "/F", "/T", "/PID", str(self.process.pid)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
             for _ in range(30):
                 if not self.is_running():
                     break
                 await asyncio.sleep(0.1)
-
+                
             if self.is_running():
                 self.process.kill()
 

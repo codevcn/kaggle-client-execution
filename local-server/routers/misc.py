@@ -2,9 +2,9 @@
 routers/misc.py — Miscellaneous endpoints
 ==========================================
 Endpoints:
-  GET  /                  : health check + WebSocket connection status
+  GET  /                  : health check + trạng thái server
   GET  /manage            : serve file manage.html
-  POST /receive-test-data : giả lập nhận payload từ Remote Server (dùng để test)
+  POST /receive-test-data : giả lập nhận payload (dùng để test thủ công)
 """
 
 import json
@@ -13,9 +13,9 @@ import logging
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from config import MANAGE_HTML_PATH, MS_INTERVAL_CHECK_REMOTE_SERVER_ALIVE
+from config import MANAGE_HTML_PATH
 from models import TestPayload
-from state import status_tracker
+import state
 
 router = APIRouter(tags=["misc"])
 logger = logging.getLogger("local-server")
@@ -23,19 +23,11 @@ logger = logging.getLogger("local-server")
 
 @router.get("/", response_class=JSONResponse)
 def root():
-    """Endpoint kiểm tra trạng thái Local Server và kết nối WebSocket."""
-    return JSONResponse(
-        content={
-            "status": "local fastapi running",
-            "websocket_client": {
-                "remote_url": status_tracker.remote_url,
-                "connected": status_tracker.is_connected,
-                "last_ping_rtt_ms": status_tracker.last_ping_rtt,
-                "last_error": status_tracker.last_error,
-                "ping_interval_ms": MS_INTERVAL_CHECK_REMOTE_SERVER_ALIVE,
-            },
-        }
-    )
+    """Endpoint kiểm tra trạng thái Local Server."""
+    return JSONResponse(content={
+        "status": "local fastapi running",
+        "cloudflare_url": state.cloudflare_url
+    })
 
 
 @router.get("/manage", response_class=HTMLResponse)
@@ -49,7 +41,7 @@ def get_manage_page():
 @router.post("/receive-test-data")
 def receive_test_data(payload: TestPayload):
     """
-    API giả lập nhận dữ liệu từ Remote Server — dùng để test thủ công.
+    API giả lập nhận dữ liệu — dùng để test thủ công.
 
     Ví dụ:
         curl -X POST "http://127.0.0.1:8000/receive-test-data" \\

@@ -43,20 +43,6 @@ CONFIG_JSON_PATH: Path = BASE_DIR / "configs" / "base_config.json"
 FILTERS_DIR: Path = BASE_DIR / "src" / "filters"
 DOCS_DIR: Path = BASE_DIR / "doc"
 
-# ─────────────────────────────────────────────
-# WebSocket — kết nối tới Remote Server
-# ─────────────────────────────────────────────
-REMOTE_WS_URL: str = os.getenv(
-    "REMOTE_WS_URL",
-    "ws://127.0.0.1:8000/ws/local/karina-pc?token=codevcn0008",
-)
-
-try:
-    MS_INTERVAL_CHECK_REMOTE_SERVER_ALIVE: int = int(
-        os.getenv("MS_INTERVAL_CHECK_REMOTE_SERVER_ALIVE", "10000")
-    )
-except ValueError:
-    MS_INTERVAL_CHECK_REMOTE_SERVER_ALIVE = 10000
 
 # ─────────────────────────────────────────────
 # rclone / GDrive
@@ -77,8 +63,9 @@ TELEGRAM_BOT_TOKEN: str | None = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID: str | None = os.getenv("TELEGRAM_CHAT_ID")
 
 # ─────────────────────────────────────────────
-# HTTP Server
+# HTTP Server & Webhook Auth
 # ─────────────────────────────────────────────
+SERVER_API_KEY: str = os.getenv("SERVER_API_KEY", "b6-secret-key-12345")
 LOCAL_HOST: str = os.getenv("LOCAL_HOST", "127.0.0.1")
 try:
     LOCAL_PORT: int = int(os.getenv("LOCAL_PORT", "8000"))

@@ -1,152 +1,119 @@
 """
-core/telegram.py — Telegram notifications & rclone GDrive downloader
-=====================================================================
-Cung cấp:
-  - send_telegram_message(message)       : gửi thông báo Telegram async
-  - handle_rclone_downloads(urls)        : tải nhiều GDrive folder qua rclone
-  - _extract_gdrive_id(url)              : trích folder ID từ GDrive URL (private)
-  - _get_rclone_remote_name(config_path) : đọc tên remote đầu tiên từ rclone.conf (private)
+core/telegram.py — Telegram & Rclone Services
+==============================================
 """
 
 import asyncio
 import logging
-import re
-import subprocess
-import urllib.parse
-import urllib.request
-from datetime import datetime
-from pathlib import Path
+from typing import List
 
-from config import (
-    CLONED_DATA_LOCAL_DIR_PATH,
-    RCLONE_CONFIG_PATH,
-    TELEGRAM_BOT_TOKEN,
-    TELEGRAM_CHAT_ID,
-)
+import httpx
+from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, CLONED_DATA_LOCAL_DIR_PATH, RCLONE_CONFIG_PATH
 
 logger = logging.getLogger("local-server")
 
 
-# ─────────────────────────────────────────────
-# Telegram
-# ─────────────────────────────────────────────
-
-
 async def send_telegram_message(message: str) -> None:
-    """Gửi tin nhắn văn bản đến Telegram chat qua Bot API."""
+    """Gửi tin nhắn thông báo lên Telegram qua Bot API."""
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-        logger.warning(
-            "⚠️ Không thể gửi Telegram vì thiếu cấu hình "
-            "TELEGRAM_BOT_TOKEN hoặc TELEGRAM_CHAT_ID."
-        )
+        logger.debug("Tắt gửi Telegram: Chưa cấu hình BOT_TOKEN hoặc CHAT_ID.")
         return
 
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    data = urllib.parse.urlencode(
-        {"chat_id": TELEGRAM_CHAT_ID, "text": message}
-    ).encode("utf-8")
-
-    def _do_request() -> None:
-        req = urllib.request.Request(url, data=data)
-        with urllib.request.urlopen(req):
-            pass
-
+    payload = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": message,
+        "parse_mode": "HTML",
+    }
     try:
-        await asyncio.to_thread(_do_request)
-        logger.info("📩 Đã gửi thông báo Telegram thành công.")
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(url, json=payload)
+            if resp.status_code != 200:
+                logger.error(f"❌ Lỗi gửi Telegram: {resp.text}")
     except Exception as e:
-        logger.error(f"❌ Lỗi khi gửi thông báo Telegram: {e}")
-
-
-# ─────────────────────────────────────────────
-# rclone helpers (private)
-# ─────────────────────────────────────────────
-
-
-def _extract_gdrive_id(url: str) -> str:
-    """Trích folder ID từ GDrive URL dạng /folders/<id> hoặc ?id=<id>."""
-    match = re.search(r"/folders/([a-zA-Z0-9_-]+)", url)
-    if match:
-        return match.group(1)
-    match = re.search(r"id=([a-zA-Z0-9_-]+)", url)
-    if match:
-        return match.group(1)
-    return ""
+        logger.error(f"❌ Exception khi gửi Telegram: {e}")
 
 
 def _get_rclone_remote_name(config_path: str) -> str:
-    """Đọc tên remote đầu tiên trong rclone.conf. Fallback về 'gdrive'."""
-    cfg = Path(config_path)
-    if not cfg.exists():
+    """Đọc tên remote đầu tiên trong rclone.conf. Fallback về 'gdrive' nếu lỗi."""
+    import os
+    if not os.path.exists(config_path):
+        logger.warning(f"⚠️ Không tìm thấy file {config_path}. Dùng mặc định 'gdrive'.")
         return "gdrive"
-    for line in cfg.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if line.startswith("[") and line.endswith("]"):
-            return line[1:-1]
+    
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("[") and line.endswith("]"):
+                    remote_name = line[1:-1]
+                    return remote_name
+    except Exception as e:
+        logger.error(f"❌ Lỗi đọc rclone config {config_path}: {e}")
     return "gdrive"
 
 
-# ─────────────────────────────────────────────
-# rclone download handler
-# ─────────────────────────────────────────────
-
-
-async def handle_rclone_downloads(urls_to_handle: list[str]) -> None:
+async def handle_rclone_downloads(urls_to_handle: List[str], job_id: str = "unknown", notebook_title: str = "unknown") -> None:
     """
-    Tải toàn bộ danh sách GDrive folder URL về local bằng rclone copy.
-    Tạo thư mục con {datetime} trong CLONED_DATA_LOCAL_DIR_PATH.
-    Gửi thông báo Telegram khi hoàn tất.
+    Tải nhiều GDrive folder qua rclone đồng thời dựa trên danh sách URL.
+    Sử dụng asyncio.gather để song song hóa các tiến trình.
     """
     if not urls_to_handle:
         return
 
-    # Tạo thư mục nhận data theo timestamp
-    now_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    target_dir = Path(CLONED_DATA_LOCAL_DIR_PATH) / now_str
-    target_dir.mkdir(parents=True, exist_ok=True)
-    logger.info(f"📂 [RCLONE] Đã tạo thư mục nhận data: {target_dir}")
-
+    import os
+    import datetime
+    import re
     remote_name = _get_rclone_remote_name(RCLONE_CONFIG_PATH)
 
-    for url in urls_to_handle:
-        folder_id = _extract_gdrive_id(url)
-        if not folder_id:
-            logger.warning(f"⚠️ [RCLONE] Không thể trích xuất folder ID từ URL: {url}")
-            continue
+    async def _download_single(url: str):
+        folder_id = url.split("/")[-1].split("?")[0]
+        
+        # Xử lý prefix cho thư mục tải về: {job_id}-{notebook_title}-{date.now()}
+        # Làm sạch notebook_title tránh ký tự đặc biệt của OS
+        safe_title = re.sub(r'[\\/*?:"<>|]', "", notebook_title).strip()
+        safe_title = safe_title.replace(" ", "_")
+        now_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        folder_name = f"{job_id}-{safe_title}-{now_str}"
+        
+        local_target_dir = os.path.join(CLONED_DATA_LOCAL_DIR_PATH, folder_name)
 
-        logger.info(f"⬇️ [RCLONE] Đang tải data từ folder ID: {folder_id}...")
+        msg_start = f"⏳ Bắt đầu tải dữ liệu từ {url}\nThư mục đích: <code>{local_target_dir}</code>"
+        logger.info(f"⬇️ {msg_start}")
+        await send_telegram_message(msg_start)
 
         cmd = [
-            "rclone", "copy",
-            f"--drive-root-folder-id={folder_id}",
+            "rclone",
+            "copy",
             f"{remote_name}:",
-            str(target_dir),
+            local_target_dir,
+            "--drive-root-folder-id", folder_id,
             "--config", RCLONE_CONFIG_PATH,
-            "-v",
+            "-v"
         ]
 
-        def _run_rclone() -> subprocess.CompletedProcess:
-            return subprocess.run(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                errors="replace",
+        logger.info(f"🚀 Lệnh chạy rclone: {' '.join(cmd)}")
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
             )
+            stdout, stderr = await proc.communicate()
 
-        process = await asyncio.to_thread(_run_rclone)
+            if proc.returncode == 0:
+                msg = f"✅ Tải thành công từ {url}"
+                logger.info(msg)
+                await send_telegram_message(msg)
+            else:
+                err_text = stderr.decode()[:500]
+                msg = f"❌ Lỗi rclone tải {url}:\n<pre>{err_text}</pre>"
+                logger.error(msg)
+                await send_telegram_message(msg)
+        except Exception as e:
+            logger.error(f"❌ Lỗi thực thi rclone: {e}")
+            await send_telegram_message(f"❌ Lỗi hệ thống khi tải từ {url}: {str(e)}")
 
-        if process.returncode == 0:
-            logger.info(f"✅ [RCLONE] Tải data thành công từ {url}")
-        else:
-            logger.error(
-                f"❌ [RCLONE] Lỗi khi tải data từ {url}. Output:\n{process.stdout}"
-            )
-
-    # Thông báo hoàn tất toàn bộ batch
-    msg = (
-        f"✅ [LOCAL SERVER] Đã hoàn tất tải toàn bộ "
-        f"{len(urls_to_handle)} thư mục GDrive.\n"
-        f"📁 Lưu tại: {target_dir}"
-    )
-    await send_telegram_message(msg)
+    # Khởi chạy song song
+    tasks = [_download_single(url) for url in urls_to_handle]
+    await asyncio.gather(*tasks)

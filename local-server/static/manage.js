@@ -29,13 +29,33 @@ document.addEventListener("DOMContentLoaded", fetchConfig);
 
 async function fetchConfig() {
   try {
-    const [configRes, filtersRes] = await Promise.all([
+    const [configRes, filtersRes, statusRes] = await Promise.all([
       fetch("/api/configs"),
       fetch("/api/available-filters"),
+      fetch("/"),
     ]);
     if (!configRes.ok) throw new Error("Không thể tải cấu hình");
     configData = await configRes.json();
     if (filtersRes.ok) availableFilters = await filtersRes.json();
+
+    if (statusRes.ok) {
+      const statusData = await statusRes.json();
+      if (statusData.cloudflare_url) {
+        const urlContainer = document.getElementById("cf-url-container");
+        const urlLink = document.getElementById("cf-url-link");
+        if (urlContainer && urlLink) {
+          urlContainer.style.display = "flex";
+          urlLink.href = statusData.cloudflare_url;
+
+          let displayUrl = statusData.cloudflare_url;
+          if (displayUrl.length > 35) {
+            displayUrl = displayUrl.substring(0, 32) + "...";
+          }
+          urlLink.textContent = displayUrl;
+          urlLink.title = statusData.cloudflare_url;
+        }
+      }
+    }
 
     document.getElementById("loading-indicator").style.display = "none";
     document.getElementById("config-container").style.display = "block";
@@ -52,27 +72,39 @@ function renderFlows() {
   container.innerHTML = "";
 
   configData.flows.forEach((flow, index) => {
+    const isFirst = index === 0;
+    const isLast = index === configData.flows.length - 1;
+
     const card = document.createElement("div");
     card.className = "flow-card";
     card.innerHTML = `
       <div class="flow-header">
         <h2>Flow #${index + 1}: <span id="title-display-${index}" style="color:var(--text-main); font-weight:500; font-size:1.1rem">${flow.flow_title || "Mới"}</span></h2>
-        <button class="btn btn-danger" onclick="removeFlow(${index})">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-          Xóa Flow
-        </button>
+        <div style="display: flex; gap: 0.5rem; align-items: center; margin-left: auto;">
+          <button class="btn btn-outline" style="padding: 0.4rem; ${isFirst ? 'opacity: 0.5; cursor: not-allowed;' : ''}" onclick="moveFlow(${index}, -1)" title="Di chuyển lên" ${isFirst ? 'disabled' : ''}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+          </button>
+          <button class="btn btn-outline" style="padding: 0.4rem; ${isLast ? 'opacity: 0.5; cursor: not-allowed;' : ''}" onclick="moveFlow(${index}, 1)" title="Di chuyển xuống" ${isLast ? 'disabled' : ''}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <button class="btn btn-danger" onclick="removeFlow(${index})">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            Xóa Flow
+          </button>
+        </div>
       </div>
 
-      <div class="switch-wrapper">
-        <label class="switch">
+      <div class="switch-wrapper" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
+        <label class="switch" style="margin: 0;">
           <input type="checkbox" id="enable-${index}" ${!flow.skip ? "checked" : ""} onchange="updateFlowData(${index}, 'skip', !this.checked)">
           <span class="slider"></span>
         </label>
-        <span style="color:var(--text-muted); font-weight:500">Bật flow này (Không skip flow này)</span>
+        <label for="enable-${index}" style="color:var(--text-muted); font-weight:500; cursor:pointer; user-select:none; margin: 0;">Bật flow này (Không skip flow này)</label>
       </div>
 
-      <div class="form-group">
-        <label>Flow Title</label>
+      <div id="flow-body-${index}" style="display: ${flow.skip ? 'none' : 'block'};">
+        <div class="form-group">
+          <label>Flow Title</label>
         <input type="text" class="form-control" value="${escapeHtml(flow.flow_title || "")}" oninput="updateTitleDisplay(${index}, this.value); updateFlowData(${index}, 'flow_title', this.value)">
       </div>
 
@@ -114,6 +146,7 @@ function renderFlows() {
           <!-- Rendered in JS -->
         </div>
       </div>
+      </div>
     `;
     container.appendChild(card);
 
@@ -143,13 +176,22 @@ function renderEntranceFilters(flowIndex) {
       optionsHtml += `<option value="${escapeHtml(filter.name)}" selected>${escapeHtml(filter.name)} (Lỗi: Không tồn tại)</option>`;
     }
 
+    const isFirst = filterIndex === 0;
+    const isLast = filterIndex === filters.length - 1;
+
     const div = document.createElement("div");
     div.className = "dynamic-item";
     div.innerHTML = `
       <select class="form-control" onchange="updateFilterName(${flowIndex}, ${filterIndex}, this.value)">
         ${optionsHtml}
       </select>
-      <button class="btn-icon danger" onclick="removeEntranceFilter(${flowIndex}, ${filterIndex})" title="Xóa filter">
+      <button class="btn-icon btn-up-down--filter" onclick="moveEntranceFilter(${flowIndex}, ${filterIndex}, -1)" title="Di chuyển lên" ${isFirst ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ""}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+      </button>
+      <button class="btn-icon btn-up-down--filter" onclick="moveEntranceFilter(${flowIndex}, ${filterIndex}, 1)" title="Di chuyển xuống" ${isLast ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ""}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </button>
+      <button class="btn-icon danger btn-up-down--filter" onclick="removeEntranceFilter(${flowIndex}, ${filterIndex})" title="Xóa filter">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
     `;
@@ -167,16 +209,24 @@ function updateTitleDisplay(index, val) {
 
 function updateFlowData(index, field, value) {
   configData.flows[index][field] = value;
+  if (field === 'skip') {
+    const body = document.getElementById(`flow-body-${index}`);
+    if (body) {
+      body.style.display = value ? 'none' : 'block';
+    }
+  }
 }
 
 function updateNestedFlowData(index, parentField, field, value) {
-  if (!configData.flows[index][parentField]) configData.flows[index][parentField] = {};
+  if (!configData.flows[index][parentField])
+    configData.flows[index][parentField] = {};
   configData.flows[index][parentField][field] = value;
 }
 
 // Entrance Filters
 function addEntranceFilter(flowIndex) {
-  if (!configData.flows[flowIndex].entrance_filters) configData.flows[flowIndex].entrance_filters = [];
+  if (!configData.flows[flowIndex].entrance_filters)
+    configData.flows[flowIndex].entrance_filters = [];
   configData.flows[flowIndex].entrance_filters.push({ name: "" });
   renderEntranceFilters(flowIndex);
 }
@@ -188,11 +238,22 @@ function removeEntranceFilter(flowIndex, filterIndex) {
   renderEntranceFilters(flowIndex);
 }
 
+function moveEntranceFilter(flowIndex, filterIndex, direction) {
+  const filters = configData.flows[flowIndex].entrance_filters;
+  const targetIndex = filterIndex + direction;
+  if (targetIndex < 0 || targetIndex >= filters.length) return;
+  const temp = filters[filterIndex];
+  filters[filterIndex] = filters[targetIndex];
+  filters[targetIndex] = temp;
+  renderEntranceFilters(flowIndex);
+}
+
 // Notebooks
 function getNotebooks(flowIndex) {
   const kaggle = configData.flows[flowIndex].kaggle;
   if (!kaggle) configData.flows[flowIndex].kaggle = { notbooks: [] };
-  if (!configData.flows[flowIndex].kaggle.notbooks) configData.flows[flowIndex].kaggle.notbooks = [];
+  if (!configData.flows[flowIndex].kaggle.notbooks)
+    configData.flows[flowIndex].kaggle.notbooks = [];
   return configData.flows[flowIndex].kaggle.notbooks;
 }
 
@@ -216,7 +277,8 @@ function renderNotebooks(flowIndex) {
     const editVars = nb.edit_vars || {};
     const editVarKeys = Object.keys(editVars);
     let editVarRowsHtml = editVarKeys
-      .map((key) => `
+      .map(
+        (key) => `
         <div class="dynamic-item" style="margin-bottom:0.4rem">
           <input type="text" class="form-control" style="flex:0.8; font-size:0.82rem; padding:0.4rem 0.6rem" value="${escapeHtml(key)}" placeholder="Key"
             onchange="updateNbEditVarKey(${flowIndex}, ${nbIndex}, '${escapeJs(key)}', this.value)">
@@ -226,7 +288,8 @@ function renderNotebooks(flowIndex) {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
-      `)
+      `,
+      )
       .join("");
 
     if (editVarKeys.length === 0) {
@@ -258,6 +321,27 @@ function renderNotebooks(flowIndex) {
           oninput="updateNbField(${flowIndex}, ${nbIndex}, 'credentials_path', this.value)" placeholder="/path/to/.env">
       </div>
 
+      <div class="form-group" style="margin-bottom:0.75rem; background: var(--bg-card); padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color);">
+        <label style="font-size:0.82rem; margin-bottom:0.3rem">Kaggle Edit Link</label>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <input type="text" class="form-control" style="font-size:0.85rem; flex: 1;" 
+            id="edit-link-${flowIndex}-${nbIndex}"
+            value="${escapeHtml(nb.notebook_link_to_edit || (nb.notebook_to_execute ? 'https://www.kaggle.com/code/' + nb.notebook_to_execute + '/edit' : ''))}"
+            oninput="updateNbField(${flowIndex}, ${nbIndex}, 'notebook_link_to_edit', this.value)"
+            placeholder="https://www.kaggle.com/code/...">
+            
+          <a href="${escapeHtml(nb.notebook_link_to_edit || (nb.notebook_to_execute ? 'https://www.kaggle.com/code/' + nb.notebook_to_execute + '/edit' : ''))}" 
+             target="_blank" rel="noopener noreferrer" 
+             class="btn-icon" title="Mở link trong tab mới" 
+             style="color: #60a5fa; padding: 0.3rem; display: flex; align-items: center;">
+             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          </a>
+          <button class="btn-icon" title="Sao chép URL" onclick="copyNotebookUrl(document.getElementById('edit-link-${flowIndex}-${nbIndex}').value, this)" style="color:#94a3b8; padding: 0.3rem;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          </button>
+        </div>
+      </div>
+
       <div class="notebook-edit-vars">
         <div class="notebook-edit-vars-title">
           <span>Edit Variables</span>
@@ -273,7 +357,9 @@ function renderNotebooks(flowIndex) {
 }
 
 function setActiveNotebook(flowIndex, activeNbIndex) {
-  getNotebooks(flowIndex).forEach((nb, i) => { nb.to_execute = i === activeNbIndex; });
+  getNotebooks(flowIndex).forEach((nb, i) => {
+    nb.to_execute = i === activeNbIndex;
+  });
   renderNotebooks(flowIndex);
 }
 
@@ -332,6 +418,18 @@ function removeNbEditVar(flowIndex, nbIndex, key) {
   renderNotebooks(flowIndex);
 }
 
+function copyNotebookUrl(url, btn) {
+  navigator.clipboard.writeText(url).then(() => {
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+    btn.style.color = "#10b981";
+    setTimeout(() => {
+      btn.innerHTML = originalHTML;
+      btn.style.color = "#94a3b8";
+    }, 2000);
+  }).catch(() => showToast("Không thể copy link!", "error"));
+}
+
 // Flows array
 function addFlow() {
   configData.flows.push({
@@ -340,7 +438,16 @@ function addFlow() {
     entrance_filters: [],
     local_data_input: "",
     gdrive: { upload_gdrive_folder_url: "", rclone_config_path: "" },
-    kaggle: { notbooks: [{ notebook_to_execute: "", edit_vars: {}, credentials_path: "", to_execute: true }] },
+    kaggle: {
+      notbooks: [
+        {
+          notebook_to_execute: "",
+          edit_vars: {},
+          credentials_path: "",
+          to_execute: true,
+        },
+      ],
+    },
   });
   renderFlows();
   window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
@@ -351,6 +458,15 @@ function removeFlow(index) {
     configData.flows.splice(index, 1);
     renderFlows();
   }
+}
+
+function moveFlow(index, direction) {
+  const targetIndex = index + direction;
+  if (targetIndex < 0 || targetIndex >= configData.flows.length) return;
+  const temp = configData.flows[index];
+  configData.flows[index] = configData.flows[targetIndex];
+  configData.flows[targetIndex] = temp;
+  renderFlows();
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -386,16 +502,17 @@ async function saveConfig() {
 }
 
 async function runAllFlows() {
-  const backdrop    = document.getElementById("terminal-modal-backdrop");
-  const termBody    = document.getElementById("terminal-body");
-  const stopBtn     = document.getElementById("btn-stop-flow");
-  const closeBtn    = document.getElementById("btn-close-terminal");
+  const backdrop = document.getElementById("terminal-modal-backdrop");
+  const termBody = document.getElementById("terminal-body");
+  const stopBtn = document.getElementById("btn-stop-flow");
+  const closeBtn = document.getElementById("btn-close-terminal");
   const statusBadge = document.getElementById("terminal-status-badge");
-  const runAllBtn   = document.getElementById("btn-run-all");
-  const countSpan   = document.getElementById("terminal-line-count");
+  const runAllBtn = document.getElementById("btn-run-all");
+  const countSpan = document.getElementById("terminal-line-count");
 
   backdrop.style.display = "flex";
-  termBody.innerHTML = '<div class="terminal-line info">[SYSTEM] Đang lưu cấu hình trước khi chạy...</div>';
+  termBody.innerHTML =
+    '<div class="terminal-line info">[SYSTEM] Đang lưu cấu hình trước khi chạy...</div>';
   if (countSpan) countSpan.textContent = "1 dòng";
   statusBadge.className = "terminal-status status-running";
   statusBadge.textContent = "Lưu cấu hình...";
@@ -409,7 +526,10 @@ async function runAllFlows() {
   if (!saveOk) {
     statusBadge.className = "terminal-status status-failed";
     statusBadge.textContent = "Lưu thất bại";
-    appendTerminalLine("[LỖI HỆ THỐNG] Không thể lưu cấu hình — hủy chạy flow.", "error");
+    appendTerminalLine(
+      "[LỖI HỆ THỐNG] Không thể lưu cấu hình — hủy chạy flow.",
+      "error",
+    );
     stopBtn.disabled = true;
     closeBtn.disabled = false;
     runAllBtn.disabled = false;
@@ -426,8 +546,12 @@ async function runAllFlows() {
       headers: { "Content-Type": "application/json" },
     });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.detail || "Không thể khởi động chạy flow");
-    appendTerminalLine("[SYSTEM] Khởi chạy thành công. Bắt đầu nhận logs...", "success");
+    if (!response.ok)
+      throw new Error(result.detail || "Không thể khởi động chạy flow");
+    appendTerminalLine(
+      "[SYSTEM] Khởi chạy thành công. Bắt đầu nhận logs...",
+      "success",
+    );
     startPolling();
   } catch (err) {
     statusBadge.className = "terminal-status status-failed";
@@ -449,24 +573,40 @@ function startPolling() {
 }
 
 function stopPolling() {
-  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+  }
 }
 
 function classifyLogLine(line) {
-  if (line.includes("❌") || line.includes(" LỖI ") || line.includes(" ERROR ") || line.includes("❌ [RCLONE] Lỗi"))
+  if (
+    line.includes("❌") ||
+    line.includes(" LỖI ") ||
+    line.includes(" ERROR ") ||
+    line.includes("❌ [RCLONE] Lỗi")
+  )
     return "error";
-  if (line.includes("✅") || line.includes(" thành công") || line.includes(" hoàn tất"))
+  if (
+    line.includes("✅") ||
+    line.includes(" thành công") ||
+    line.includes(" hoàn tất")
+  )
     return "success";
-  if (line.includes("⚠️") || line.includes(" CẢNH BÁO ") || line.includes(" WARNING "))
+  if (
+    line.includes("⚠️") ||
+    line.includes(" CẢNH BÁO ") ||
+    line.includes(" WARNING ")
+  )
     return "warning";
   return "info";
 }
 
 async function pollFlowStatus() {
-  const stopBtn     = document.getElementById("btn-stop-flow");
-  const closeBtn    = document.getElementById("btn-close-terminal");
+  const stopBtn = document.getElementById("btn-stop-flow");
+  const closeBtn = document.getElementById("btn-close-terminal");
   const statusBadge = document.getElementById("terminal-status-badge");
-  const runAllBtn   = document.getElementById("btn-run-all");
+  const runAllBtn = document.getElementById("btn-run-all");
 
   try {
     const response = await fetch(`/api/flow-status?offset=${logOffset}`);
@@ -474,7 +614,9 @@ async function pollFlowStatus() {
     const status = await response.json();
 
     if (status.logs && status.logs.length > 0) {
-      status.logs.forEach((line) => appendTerminalLine(line, classifyLogLine(line)));
+      status.logs.forEach((line) =>
+        appendTerminalLine(line, classifyLogLine(line)),
+      );
       logOffset += status.logs.length;
     }
 
@@ -497,15 +639,28 @@ function applyTerminalFinalStatus(badge, returncode) {
   if (returncode === 0) {
     badge.className = "terminal-status status-success";
     badge.textContent = "Hoàn thành";
-    appendTerminalLine("[SYSTEM] Tiến trình đã chạy hoàn tất thành công (exit code 0).", "success");
-  } else if (returncode === -15 || returncode === -9 || returncode === 3221225786) {
+    appendTerminalLine(
+      "[SYSTEM] Tiến trình đã chạy hoàn tất thành công (exit code 0).",
+      "success",
+    );
+  } else if (
+    returncode === -15 ||
+    returncode === -9 ||
+    returncode === 3221225786
+  ) {
     badge.className = "terminal-status status-stopped";
     badge.textContent = "Đã dừng";
-    appendTerminalLine("[SYSTEM] Tiến trình đã bị dừng cưỡng bức bởi người dùng.", "warning");
+    appendTerminalLine(
+      "[SYSTEM] Tiến trình đã bị dừng cưỡng bức bởi người dùng.",
+      "warning",
+    );
   } else {
     badge.className = "terminal-status status-failed";
     badge.textContent = `Lỗi (code ${returncode})`;
-    appendTerminalLine(`[SYSTEM] Tiến trình thất bại với mã lỗi ${returncode}.`, "error");
+    appendTerminalLine(
+      `[SYSTEM] Tiến trình thất bại với mã lỗi ${returncode}.`,
+      "error",
+    );
   }
 }
 
@@ -516,16 +671,24 @@ async function stopAllFlows() {
   try {
     const response = await fetch("/api/stop-flows", { method: "POST" });
     const result = await response.json();
-    if (response.ok) appendTerminalLine("[SYSTEM] Lệnh dừng đã được gửi.", "success");
+    if (response.ok)
+      appendTerminalLine("[SYSTEM] Lệnh dừng đã được gửi.", "success");
     else throw new Error(result.detail || "Không thể gửi lệnh dừng");
   } catch (err) {
-    appendTerminalLine(`[LỖI HỆ THỐNG] Không thể dừng: ${err.message}`, "error");
+    appendTerminalLine(
+      `[LỖI HỆ THỐNG] Không thể dừng: ${err.message}`,
+      "error",
+    );
     stopBtn.disabled = false;
   }
 }
 
 function closeTerminalModal(event) {
-  if (event && event.target !== document.getElementById("terminal-modal-backdrop")) return;
+  if (
+    event &&
+    event.target !== document.getElementById("terminal-modal-backdrop")
+  )
+    return;
   document.getElementById("terminal-modal-backdrop").style.display = "none";
   stopPolling();
 }
@@ -551,21 +714,25 @@ function copyLogs(btn) {
     .writeText(lines)
     .then(() => {
       const originalHTML = btn.innerHTML;
-      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>Đã copy!';
+      btn.innerHTML =
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>Đã copy!';
       btn.style.color = "#10b981";
-      setTimeout(() => { btn.innerHTML = originalHTML; btn.style.color = ""; }, 2000);
+      setTimeout(() => {
+        btn.innerHTML = originalHTML;
+        btn.style.color = "";
+      }, 2000);
     })
     .catch(() => showToast("Không thể copy log!", "error"));
 }
 
 async function reopenLogModal() {
-  const backdrop    = document.getElementById("terminal-modal-backdrop");
-  const termBody    = document.getElementById("terminal-body");
-  const stopBtn     = document.getElementById("btn-stop-flow");
-  const closeBtn    = document.getElementById("btn-close-terminal");
+  const backdrop = document.getElementById("terminal-modal-backdrop");
+  const termBody = document.getElementById("terminal-body");
+  const stopBtn = document.getElementById("btn-stop-flow");
+  const closeBtn = document.getElementById("btn-close-terminal");
   const statusBadge = document.getElementById("terminal-status-badge");
-  const runAllBtn   = document.getElementById("btn-run-all");
-  const countSpan   = document.getElementById("terminal-line-count");
+  const runAllBtn = document.getElementById("btn-run-all");
+  const countSpan = document.getElementById("terminal-line-count");
 
   backdrop.style.display = "flex";
   termBody.innerHTML = "";
@@ -578,7 +745,9 @@ async function reopenLogModal() {
     const status = await response.json();
 
     if (status.logs && status.logs.length > 0) {
-      status.logs.forEach((line) => appendTerminalLine(line, classifyLogLine(line)));
+      status.logs.forEach((line) =>
+        appendTerminalLine(line, classifyLogLine(line)),
+      );
       logOffset = status.logs.length;
     }
 
@@ -611,15 +780,19 @@ function openGdriveModal() {
 }
 
 function closeGdriveModal(event) {
-  if (event && event.target !== document.getElementById("gdrive-modal-backdrop")) return;
+  if (
+    event &&
+    event.target !== document.getElementById("gdrive-modal-backdrop")
+  )
+    return;
   document.getElementById("gdrive-modal-backdrop").style.display = "none";
 }
 
 function renderGdriveTable() {
-  const urls     = configData.available_gdrive_urls || [];
-  const tbody    = document.getElementById("gdrive-table-body");
+  const urls = configData.available_gdrive_urls || [];
+  const tbody = document.getElementById("gdrive-table-body");
   const emptyMsg = document.getElementById("gdrive-empty");
-  const table    = document.getElementById("gdrive-table");
+  const table = document.getElementById("gdrive-table");
   tbody.innerHTML = "";
 
   if (urls.length === 0) {
@@ -633,7 +806,7 @@ function renderGdriveTable() {
 
   urls.forEach((item) => {
     const name = item.name || "";
-    const url  = item.url  || "";
+    const url = item.url || "";
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><span class="gdrive-name-badge">${escapeHtml(name)}</span></td>
@@ -656,12 +829,17 @@ function renderGdriveTable() {
 }
 
 function copyGdriveUrl(url, btn) {
-  navigator.clipboard.writeText(url)
+  navigator.clipboard
+    .writeText(url)
     .then(() => {
       const original = btn.innerHTML;
-      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+      btn.innerHTML =
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
       btn.style.color = "#10b981";
-      setTimeout(() => { btn.innerHTML = original; btn.style.color = "#94a3b8"; }, 1500);
+      setTimeout(() => {
+        btn.innerHTML = original;
+        btn.style.color = "#94a3b8";
+      }, 1500);
     })
     .catch(() => showToast("Không thể sao chép!", "error"));
 }
@@ -686,10 +864,10 @@ class ShortcutManager {
 
   _comboFromEvent(e) {
     const keys = [];
-    if (e.ctrlKey)  keys.push("ctrl");
-    if (e.altKey)   keys.push("alt");
+    if (e.ctrlKey) keys.push("ctrl");
+    if (e.altKey) keys.push("alt");
     if (e.shiftKey) keys.push("shift");
-    if (e.metaKey)  keys.push("meta");
+    if (e.metaKey) keys.push("meta");
     let key = e.key.toLowerCase();
     if (["control", "shift", "alt", "meta"].includes(key)) return null;
     if (key === "\\") key = "\\";
@@ -724,14 +902,22 @@ class ShortcutManager {
 
 window.shortcutManager = new ShortcutManager();
 
-window.shortcutManager.register("ctrl+s",    () => saveConfig(),       "Lưu cấu hình");
-window.shortcutManager.register("ctrl+\\",   () => runAllFlows(),      "Chạy tất cả Flow");
-window.shortcutManager.register("ctrl+q",    () => {
-  closeTerminalModal();
-  closeGdriveModal();
-  closeShortcutsModal();
-  closeDocsModal();
-}, "Đóng tất cả popup/modal");
+window.shortcutManager.register("ctrl+s", () => saveConfig(), "Lưu cấu hình");
+window.shortcutManager.register(
+  "ctrl+\\",
+  () => runAllFlows(),
+  "Chạy tất cả Flow",
+);
+window.shortcutManager.register(
+  "ctrl+q",
+  () => {
+    closeTerminalModal();
+    closeGdriveModal();
+    closeShortcutsModal();
+    closeDocsModal();
+  },
+  "Đóng tất cả popup/modal",
+);
 
 function openShortcutsModal() {
   document.getElementById("shortcuts-modal-backdrop").style.display = "flex";
@@ -739,28 +925,38 @@ function openShortcutsModal() {
 }
 
 function closeShortcutsModal(event) {
-  if (event && event.target !== document.getElementById("shortcuts-modal-backdrop")) return;
+  if (
+    event &&
+    event.target !== document.getElementById("shortcuts-modal-backdrop")
+  )
+    return;
   document.getElementById("shortcuts-modal-backdrop").style.display = "none";
 }
 
 function renderShortcuts() {
-  const container  = document.getElementById("shortcuts-list-container");
-  const shortcuts  = window.shortcutManager.getAllShortcuts();
+  const container = document.getElementById("shortcuts-list-container");
+  const shortcuts = window.shortcutManager.getAllShortcuts();
 
   if (shortcuts.length === 0) {
-    container.innerHTML = '<p style="color:var(--text-muted);text-align:center">Chưa có phím tắt nào được cấu hình.</p>';
+    container.innerHTML =
+      '<p style="color:var(--text-muted);text-align:center">Chưa có phím tắt nào được cấu hình.</p>';
     return;
   }
 
-  container.innerHTML = shortcuts.map((s) => {
-    const keys = s.combo.split("+").map((k) => `<kbd>${k}</kbd>`).join(" + ");
-    return `
+  container.innerHTML = shortcuts
+    .map((s) => {
+      const keys = s.combo
+        .split("+")
+        .map((k) => `<kbd>${k}</kbd>`)
+        .join(" + ");
+      return `
       <div class="shortcut-item">
         <span style="color:var(--text-main); font-weight: 500;">${escapeHtml(s.description)}</span>
         <span>${keys}</span>
       </div>
     `;
-  }).join("");
+    })
+    .join("");
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -773,7 +969,12 @@ let isCdnLoaded = false;
 function initMarkdownIt() {
   if (window.markdownit && !mdRenderer) {
     isCdnLoaded = true;
-    mdRenderer = window.markdownit({ html: false, linkify: true, typographer: true, breaks: true });
+    mdRenderer = window.markdownit({
+      html: false,
+      linkify: true,
+      typographer: true,
+      breaks: true,
+    });
     document.getElementById("cdn-error-msg").style.display = "none";
   } else if (!window.markdownit) {
     isCdnLoaded = false;
@@ -785,13 +986,14 @@ async function openDocsModal() {
   document.getElementById("docs-modal-backdrop").style.display = "flex";
   initMarkdownIt();
   try {
-    const res  = await fetch("/api/docs");
+    const res = await fetch("/api/docs");
     const docs = await res.json();
     const listEl = document.getElementById("docs-list");
     listEl.innerHTML = "";
 
     if (docs.length === 0) {
-      listEl.innerHTML = '<div style="padding:1rem;color:var(--text-muted);font-size:0.9rem">Không có tài liệu nào.</div>';
+      listEl.innerHTML =
+        '<div style="padding:1rem;color:var(--text-muted);font-size:0.9rem">Không có tài liệu nào.</div>';
     } else {
       docs.forEach((doc) => {
         const div = document.createElement("div");
@@ -807,16 +1009,20 @@ async function openDocsModal() {
 }
 
 function closeDocsModal(event) {
-  if (event && event.target !== document.getElementById("docs-modal-backdrop")) return;
+  if (event && event.target !== document.getElementById("docs-modal-backdrop"))
+    return;
   document.getElementById("docs-modal-backdrop").style.display = "none";
 }
 
 async function loadDocContent(filename, el) {
-  document.querySelectorAll(".doc-item").forEach((d) => d.classList.remove("active"));
+  document
+    .querySelectorAll(".doc-item")
+    .forEach((d) => d.classList.remove("active"));
   if (el) el.classList.add("active");
 
   const previewEl = document.getElementById("docs-preview");
-  previewEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-muted)">Đang tải nội dung...</div>';
+  previewEl.innerHTML =
+    '<div style="text-align:center;padding:2rem;color:var(--text-muted)">Đang tải nội dung...</div>';
 
   try {
     const res = await fetch(`/api/docs/${encodeURIComponent(filename)}`);
@@ -829,10 +1035,14 @@ async function loadDocContent(filename, el) {
       if (window.DOMPurify) rawHtml = DOMPurify.sanitize(rawHtml);
       previewEl.innerHTML = rawHtml;
     } else {
-      previewEl.innerHTML = '<pre style="white-space:pre-wrap;font-family:monospace">' + escapeHtml(data.content) + "</pre>";
+      previewEl.innerHTML =
+        '<pre style="white-space:pre-wrap;font-family:monospace">' +
+        escapeHtml(data.content) +
+        "</pre>";
     }
   } catch (err) {
-    previewEl.innerHTML = '<div style="color:var(--danger)">' + escapeHtml(err.message) + "</div>";
+    previewEl.innerHTML =
+      '<div style="color:var(--danger)">' + escapeHtml(err.message) + "</div>";
     showToast("Lỗi tải nội dung file", "error");
   }
 }
@@ -845,18 +1055,27 @@ function showToast(msg, type = "success") {
   const container = document.getElementById("toast-container");
   const toast = document.createElement("div");
   toast.className = `toast ${type}`;
-  const icon = type === "success"
-    ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`
-    : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+  const icon =
+    type === "success"
+      ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`
+      : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
   toast.innerHTML = `${icon} <span>${msg}</span>`;
   container.appendChild(toast);
   setTimeout(() => toast.classList.add("show"), 10);
-  setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 400); }, 3000);
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 400);
+  }, 3000);
 }
 
 function escapeHtml(unsafe) {
   if (typeof unsafe !== "string") return unsafe;
-  return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function escapeJs(unsafe) {

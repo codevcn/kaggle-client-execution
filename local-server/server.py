@@ -3,11 +3,11 @@ server.py — Local FastAPI Server Entry Point
 =============================================
 File này chỉ làm 3 việc:
   1. Kích hoạt config (logging + dotenv) bằng cách import config
-  2. Định nghĩa lifespan: khởi động WebSocket worker và dọn dẹp khi tắt
+  2. Định nghĩa lifespan: dọn dẹp khi tắt (dừng flow đang chạy)
   3. Tạo FastAPI app và đăng ký tất cả routers
 
 Mọi logic nghiệp vụ nằm trong:
-  core/       — flow_manager, ws_client, telegram
+  core/       — flow_manager, telegram
   routers/    — flows, configs, filters, docs, misc
   config.py   — env vars, paths, logging
   state.py    — global singletons
@@ -22,9 +22,9 @@ import config  # noqa: F401 — kích hoạt logging.basicConfig và load_dotenv
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from core.ws_client import websocket_client_worker
-from state import flow_manager, status_tracker
-from routers import configs, docs, filters, flows, misc
+from state import flow_manager
+from core.cloudflare import tunnel_manager
+from routers import configs, docs, filters, flows, misc, webhook
 
 logger = logging.getLogger("local-server")
 
@@ -36,19 +36,23 @@ logger = logging.getLogger("local-server")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ── Startup: chạy WebSocket client trong background ──────────────────
-    worker_task = asyncio.create_task(websocket_client_worker(status_tracker))
-    yield
-    # ── Shutdown: huỷ worker và dừng flow đang chạy ──────────────────────
-    worker_task.cancel()
-    try:
-        await worker_task
-    except asyncio.CancelledError:
-        pass
+    # ── Startup: khởi động Cloudflare Tunnel ────────────────────────────
+    success = await tunnel_manager.start()
+    if not success:
+        logger.error("❌ Không thể khởi động Cloudflare Tunnel. Dừng server.")
+        # Lưu ý: FastAPI không dừng ngay lập tức khi raise trong lifespan
+        # Nhưng nó sẽ chặn ứng dụng nhận request hoặc crash.
+        import sys
+        sys.exit(1)
 
+    yield
+    
+    # ── Shutdown: dừng flow đang chạy và cloudflare ────────────────────────────
     if flow_manager.is_running():
         logger.info("⏹️ Đang dừng tiến trình chạy flow...")
         await flow_manager.stop()
+        
+    await tunnel_manager.stop()
 
     logger.info("⏹️ Local Server đã dừng.")
 
@@ -60,7 +64,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Local FastAPI Server",
-    description="FastAPI Local Server nhận dữ liệu từ Remote Server qua WebSocket ngầm",
+    description="FastAPI Local Server quản lý và chạy flow pipeline Kaggle",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -74,6 +78,7 @@ app.include_router(flows.router)
 app.include_router(configs.router)
 app.include_router(filters.router)
 app.include_router(docs.router)
+app.include_router(webhook.router)
 
 
 # ─────────────────────────────────────────────
