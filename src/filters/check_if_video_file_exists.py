@@ -74,7 +74,7 @@ def find_video_files(folder: Path) -> tuple[list[Path], str | None]:
 
     video_files = [
         f
-        for f in sorted(folder.iterdir())
+        for f in sorted(folder.rglob("*"))
         if f.is_file() and f.suffix.lower() in VIDEO_EXTENSIONS
     ]
 

@@ -1,43 +1,68 @@
-# 3. Đẩy code từ máy tính cá nhân lên Kaggle bằng Kaggle API
+# Hướng dẫn chuẩn: Edit Vars trong Kaggle Notebook bằng Kaggle API
 
-## Mục tiêu
+## 1. Mục tiêu
 
-Mục tiêu của cách này là: **sửa value của một biến trong notebook trên máy tính cá nhân trước**, sau đó mới đẩy notebook đó lên Kaggle để Kaggle chạy bản đã được chỉnh sửa.
+Tài liệu này mô tả cách **sửa giá trị biến trong file Kaggle Notebook `.ipynb` ở local trước khi push lên Kaggle**.
 
-Cách này phù hợp khi bạn có một notebook `.ipynb` chạy trên Kaggle, nhưng trước mỗi lần chạy thật bạn cần đổi một vài biến như:
+Cách làm này phù hợp khi bạn có một notebook chạy trên Kaggle, nhưng trước mỗi lần chạy cần đổi một số biến cấu hình như:
 
 ```python
 RUN_MODE = "prod"
 HEALTHCHECK_URL = "https://example.com/healthcheck"
 INTERVAL_SECONDS = 300
 ENABLE_DEBUG = False
+CURRENT_JOB_ID = "job_001"
 ```
 
-Thay vì mở Kaggle Notebook bằng trình duyệt rồi sửa tay, ta sẽ sửa notebook ở local bằng script, sau đó dùng Kaggle API để push notebook lên Kaggle.
-
----
-
-## Ý tưởng tổng quan
-
-Workflow sẽ là:
+Thay vì mở Kaggle Notebook trên trình duyệt rồi sửa tay, ta sẽ:
 
 ```text
-1. Tải / lưu notebook Kaggle về máy cá nhân
-2. Đánh dấu một cell config trong notebook
-3. Dùng script Python sửa value trong cell config đó
-4. Kiểm tra notebook local đã đổi đúng chưa
-5. Dùng Kaggle API push notebook lên Kaggle
-6. Kaggle tự chạy bản notebook mới vừa được push
-7. Theo dõi status và tải output nếu cần
+Sửa biến trong notebook local bằng script
+→ push notebook đã sửa lên Kaggle bằng Kaggle API
+→ Kaggle chạy version notebook mới
 ```
 
-Điểm quan trọng: **Kaggle API không nên được hiểu như một công cụ truyền tham số runtime trực tiếp vào notebook giống `python script.py --arg value`**. Với notebook Kaggle, cách ổn định hơn là tạo sẵn một cell config trong notebook, sau đó sửa cell này trước khi push.
+Điểm quan trọng cần hiểu:
+
+> Kaggle API không hoạt động giống kiểu truyền tham số runtime trực tiếp như `python script.py --arg value`.
+>
+> Với Kaggle Notebook, cách ổn định hơn là tạo sẵn một **cell config** trong notebook, rồi dùng script local ghi đè cell đó trước khi push.
 
 ---
 
-## Cấu trúc thư mục khuyến nghị
+## 2. Luồng hoạt động tổng quan
 
-Ví dụ tạo thư mục như sau:
+Workflow chuẩn:
+
+```text
+1. Chuẩn bị notebook `.ipynb` ở local
+2. Tạo một cell config riêng trong notebook
+3. Đánh dấu cell config bằng marker cố định
+4. Dùng script Python sửa value trong cell config
+5. Kiểm tra notebook local đã được patch đúng chưa
+6. Dùng Kaggle API push notebook lên Kaggle
+7. Kaggle tự chạy version notebook mới
+8. Theo dõi status và tải output nếu cần
+```
+
+Trong hệ thống backend tự động, luồng thường là:
+
+```text
+1. Frontend gửi danh sách biến cần sửa xuống backend
+2. Backend lưu các biến này trong `edit_vars`
+3. Backend pull notebook từ Kaggle về thư mục tạm
+4. Backend dùng `nbformat` đọc file `.ipynb`
+5. Backend tìm cell chứa marker `# === KAGGLE_RUN_CONFIG ===`
+6. Backend ghi đè toàn bộ cell config bằng biến mới
+7. Backend push notebook đã patch lên Kaggle
+8. Kaggle chạy notebook mới
+```
+
+---
+
+## 3. Cấu trúc thư mục khuyến nghị
+
+Ví dụ cấu trúc thư mục local:
 
 ```text
 kaggle-runner/
@@ -48,20 +73,34 @@ kaggle-runner/
 └─ push_to_kaggle.ps1
 ```
 
-Trong đó:
+Vai trò từng file:
 
-| File                              | Vai trò                                                |
-| --------------------------------- | ------------------------------------------------------ |
-| `main.ipynb`                      | Notebook sẽ chạy trên Kaggle                           |
-| `kernel-metadata.json`            | Metadata bắt buộc để Kaggle biết notebook nào cần push |
-| `patch_kaggle_notebook_config.py` | Script sửa biến trong notebook trước khi push          |
-| `push_to_kaggle.ps1`              | Script PowerShell để sửa biến rồi push lên Kaggle      |
+| File                              | Vai trò                                            |
+| --------------------------------- | -------------------------------------------------- |
+| `main.ipynb`                      | Notebook sẽ chạy trên Kaggle                       |
+| `kernel-metadata.json`            | Metadata để Kaggle biết notebook nào cần push      |
+| `patch_kaggle_notebook_config.py` | Script sửa biến trong notebook trước khi push      |
+| `push_to_kaggle.ps1`              | Script PowerShell chạy trọn quy trình patch + push |
+
+Nếu muốn giữ file gốc sạch, có thể tạo thêm file build:
+
+```text
+kaggle-runner/
+│
+├─ main.ipynb
+├─ main.kaggle.ipynb
+├─ kernel-metadata.json
+├─ patch_kaggle_notebook_config.py
+└─ push_to_kaggle.ps1
+```
+
+Khi đó `main.ipynb` là bản gốc, còn `main.kaggle.ipynb` là bản đã patch để upload lên Kaggle.
 
 ---
 
-## Bước 1: Cài Kaggle API trên máy cá nhân
+## 4. Cài Kaggle API trên máy cá nhân
 
-Cài package Kaggle CLI:
+Cài Kaggle CLI:
 
 ```powershell
 pip install kaggle
@@ -73,13 +112,13 @@ Kiểm tra lệnh `kaggle` đã dùng được chưa:
 kaggle --help
 ```
 
-Nếu Windows báo không nhận lệnh `kaggle`, thường là do thư mục `Scripts` của Python chưa nằm trong `PATH`. Khi đó bạn có thể thử:
+Nếu Windows báo không nhận lệnh `kaggle`, có thể dùng:
 
 ```powershell
 python -m kaggle --help
 ```
 
-Hoặc thêm thư mục dạng sau vào `PATH`:
+Hoặc thêm thư mục `Scripts` của Python vào `PATH`, ví dụ:
 
 ```text
 C:\Users\<USERNAME>\AppData\Roaming\Python\Python3xx\Scripts
@@ -87,29 +126,29 @@ C:\Users\<USERNAME>\AppData\Roaming\Python\Python3xx\Scripts
 
 ---
 
-## Bước 2: Cấu hình xác thực Kaggle API
+## 5. Cấu hình xác thực Kaggle API
 
 Có 2 cách phổ biến.
 
-### Cách A: Dùng lệnh đăng nhập
+### Cách A: Đăng nhập bằng CLI
 
 ```powershell
 kaggle auth login
 ```
 
-Cách này sẽ mở quy trình đăng nhập bằng trình duyệt.
+Lệnh này sẽ mở quy trình đăng nhập bằng trình duyệt.
 
 ### Cách B: Dùng file `kaggle.json`
 
-Vào Kaggle account settings, tạo API key rồi tải file `kaggle.json` về.
+Vào Kaggle Account Settings, tạo API key rồi tải file `kaggle.json`.
 
-Trên Windows, đặt file vào:
+Trên Windows, đặt file tại:
 
 ```text
 C:\Users\<USERNAME>\.kaggle\kaggle.json
 ```
 
-Trên Linux/macOS, đặt file vào:
+Trên Linux/macOS, đặt file tại:
 
 ```bash
 ~/.kaggle/kaggle.json
@@ -121,11 +160,11 @@ Sau đó test:
 kaggle kernels list --mine
 ```
 
-Nếu lệnh trả về danh sách notebook/kernel của bạn, nghĩa là authentication đã hoạt động.
+Nếu trả về danh sách notebook/kernel của bạn thì xác thực đã hoạt động.
 
 ---
 
-## Bước 3: Chuẩn bị `kernel-metadata.json`
+## 6. Chuẩn bị `kernel-metadata.json`
 
 Trong thư mục chứa notebook, chạy:
 
@@ -135,7 +174,7 @@ kaggle kernels init -p .
 
 Lệnh này tạo file `kernel-metadata.json` mẫu.
 
-Ví dụ nội dung file:
+Ví dụ nội dung:
 
 ```json
 {
@@ -156,24 +195,32 @@ Ví dụ nội dung file:
 
 Các field quan trọng:
 
-| Field             | Ý nghĩa                                                      |
-| ----------------- | ------------------------------------------------------------ |
-| `id`              | Slug của notebook trên Kaggle, dạng `username/notebook-slug` |
-| `title`           | Tên notebook hiển thị trên Kaggle                            |
-| `code_file`       | Tên file notebook local sẽ được push                         |
-| `language`        | Với Python notebook thì để `python`                          |
-| `kernel_type`     | Với `.ipynb` thì để `notebook`                               |
-| `is_private`      | `true` nếu muốn notebook private                             |
-| `enable_gpu`      | `true` nếu cần GPU                                           |
-| `enable_internet` | `true` nếu notebook cần internet                             |
+| Field             | Ý nghĩa                                                  |
+| ----------------- | -------------------------------------------------------- |
+| `id`              | Slug notebook trên Kaggle, dạng `username/notebook-slug` |
+| `title`           | Tên notebook hiển thị trên Kaggle                        |
+| `code_file`       | Tên file notebook local sẽ được push                     |
+| `language`        | Với Python notebook thì để `python`                      |
+| `kernel_type`     | Với `.ipynb` thì để `notebook`                           |
+| `is_private`      | `true` nếu muốn notebook private                         |
+| `enable_gpu`      | `true` nếu cần GPU                                       |
+| `enable_internet` | `true` nếu notebook cần internet                         |
 
-Lưu ý: `code_file` phải trỏ đúng tới file `.ipynb` bạn muốn push, ví dụ `main.ipynb`.
+Lưu ý:
+
+- `code_file` phải trỏ đúng tới file `.ipynb` cần push.
+- File `.ipynb` nên nằm cùng thư mục với `kernel-metadata.json`.
+- Nếu dùng bản build `main.kaggle.ipynb`, cần đổi:
+
+```json
+"code_file": "main.kaggle.ipynb"
+```
 
 ---
 
-## Bước 4: Tạo cell config trong notebook
+## 7. Tạo cell config trong notebook
 
-Trong `main.ipynb`, tạo một cell riêng ở đầu notebook như sau:
+Trong `main.ipynb`, tạo một code cell riêng ở gần đầu notebook:
 
 ```python
 # === KAGGLE_RUN_CONFIG ===
@@ -181,35 +228,64 @@ RUN_MODE = "dev"
 HEALTHCHECK_URL = "https://default-url.com/healthcheck"
 INTERVAL_SECONDS = 300
 ENABLE_DEBUG = True
+CURRENT_JOB_ID = "local_test"
 ```
 
-Marker quan trọng là dòng:
+Marker bắt buộc là:
 
 ```python
 # === KAGGLE_RUN_CONFIG ===
 ```
 
-Script local sẽ tìm cell có marker này và thay toàn bộ nội dung cell bằng value mới.
+Script sẽ tìm cell chứa marker này và ghi đè toàn bộ nội dung cell bằng config mới.
 
 Khuyến nghị:
 
-- Đặt cell config ở gần đầu notebook.
-- Không viết logic xử lý phức tạp trong cell config.
-- Chỉ để assignment biến trong cell này.
+- Chỉ có **duy nhất 1 cell code** chứa marker này.
+- Đặt cell config gần đầu notebook.
+- Không đặt logic xử lý phức tạp trong cell config.
+- Không đặt code quan trọng trong cell config, vì cell này sẽ bị ghi đè hoàn toàn.
 - Các cell phía sau chỉ đọc lại biến đã khai báo.
 
-Ví dụ cell phía sau dùng biến:
+Ví dụ cell phía sau:
 
 ```python
 print("RUN_MODE:", RUN_MODE)
 print("HEALTHCHECK_URL:", HEALTHCHECK_URL)
 print("INTERVAL_SECONDS:", INTERVAL_SECONDS)
 print("ENABLE_DEBUG:", ENABLE_DEBUG)
+print("CURRENT_JOB_ID:", CURRENT_JOB_ID)
 ```
 
 ---
 
-## Bước 5: Viết script sửa value trong notebook
+## 8. Cài thư viện cần thiết để patch notebook
+
+Script patch cần thư viện `nbformat` để đọc và ghi file `.ipynb`.
+
+Cài bằng:
+
+```powershell
+pip install nbformat
+```
+
+Nếu đang chạy trong môi trường ảo `.venv`, cần cài đúng vào môi trường đó:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install nbformat
+```
+
+Nên thêm vào `requirements.txt`:
+
+```text
+nbformat
+```
+
+Nếu thiếu `nbformat`, script có thể không sửa được notebook. Trong một số hệ thống, lỗi này chỉ hiện log rồi bỏ qua bước patch, dẫn đến notebook trên Kaggle vẫn giữ nguyên biến cũ.
+
+---
+
+## 9. Script Python sửa biến trong notebook
 
 Tạo file `patch_kaggle_notebook_config.py`:
 
@@ -225,7 +301,7 @@ MARKER = "# === KAGGLE_RUN_CONFIG ==="
 
 def parse_value(raw: str):
     """
-    Parse value từ command line.
+    Parse value từ command line hoặc frontend.
 
     Ví dụ:
     - 300       -> int
@@ -248,7 +324,8 @@ def build_config_source(config: dict) -> str:
     lines.append("# Do not edit this cell manually before automated Kaggle push.\n")
 
     for key, value in config.items():
-        lines.append(f"{key} = {repr(value)}")
+        parsed_value = parse_value(str(value)) if isinstance(value, str) else value
+        lines.append(f"{key} = {repr(parsed_value)}")
 
     return "\n".join(lines)
 
@@ -257,16 +334,19 @@ def main():
     parser = argparse.ArgumentParser(
         description="Patch Kaggle notebook config cell before pushing to Kaggle."
     )
+
     parser.add_argument(
         "--notebook",
         required=True,
         help="Path to .ipynb file, for example: main.ipynb",
     )
+
     parser.add_argument(
         "--out",
         default=None,
         help="Output .ipynb path. If omitted, overwrite the input notebook.",
     )
+
     parser.add_argument(
         "--set",
         action="append",
@@ -283,6 +363,7 @@ def main():
         raise FileNotFoundError(f"Notebook not found: {notebook_path}")
 
     config = {}
+
     for item in args.set:
         if "=" not in item:
             raise ValueError(f"Invalid --set value: {item}. Expected NAME=VALUE")
@@ -316,8 +397,10 @@ def main():
         )
 
     nbformat.write(nb, output_path)
+
     print(f"Patched notebook saved to: {output_path}")
     print("Updated config:")
+
     for key, value in config.items():
         print(f"  {key} = {repr(value)}")
 
@@ -326,15 +409,23 @@ if __name__ == "__main__":
     main()
 ```
 
-Cài thư viện cần thiết:
+Điểm quan trọng trong script:
 
-```powershell
-pip install nbformat
+```python
+parsed_value = parse_value(str(value)) if isinstance(value, str) else value
+lines.append(f"{key} = {repr(parsed_value)}")
 ```
+
+Lý do cần parse value:
+
+- Frontend/backend thường gửi mọi giá trị dưới dạng string.
+- Nếu không parse, `"False"` sẽ bị ghi thành `'False'`.
+- Trong Python, chuỗi `'False'` vẫn là truthy, nên `if MY_FLAG:` sẽ chạy như `True`.
+- Sau khi parse đúng, `"False"` sẽ thành boolean `False`, `"300"` sẽ thành số `300`.
 
 ---
 
-## Bước 6: Test sửa biến ở local
+## 10. Test sửa biến ở local
 
 Ví dụ muốn đổi config thành production:
 
@@ -344,10 +435,11 @@ python patch_kaggle_notebook_config.py `
   --set RUN_MODE=prod `
   --set HEALTHCHECK_URL=https://b6-remote-server-kaggle-2026.onrender.com/healthcheck `
   --set INTERVAL_SECONDS=300 `
-  --set ENABLE_DEBUG=false
+  --set ENABLE_DEBUG=false `
+  --set CURRENT_JOB_ID=job_001
 ```
 
-Sau khi chạy, mở lại `main.ipynb` và kiểm tra cell config. Nó sẽ được đổi thành dạng:
+Sau khi chạy, cell config trong notebook sẽ được đổi thành:
 
 ```python
 # === KAGGLE_RUN_CONFIG ===
@@ -358,23 +450,46 @@ RUN_MODE = 'prod'
 HEALTHCHECK_URL = 'https://b6-remote-server-kaggle-2026.onrender.com/healthcheck'
 INTERVAL_SECONDS = 300
 ENABLE_DEBUG = False
+CURRENT_JOB_ID = 'job_001'
 ```
 
-Lưu ý cách truyền value:
+Bảng mapping kiểu dữ liệu:
 
-| Bạn truyền                   | Python nhận được     |
-| ---------------------------- | -------------------- |
-| `--set INTERVAL_SECONDS=300` | `300` kiểu int       |
-| `--set ENABLE_DEBUG=false`   | `False` kiểu bool    |
-| `--set RATE=1.5`             | `1.5` kiểu float     |
-| `--set RUN_MODE=prod`        | `'prod'` kiểu string |
-| `--set RUN_MODE="prod"`      | `'prod'` kiểu string |
+| Giá trị truyền vào           | Python nhận được    |
+| ---------------------------- | ------------------- |
+| `--set INTERVAL_SECONDS=300` | `300` kiểu `int`    |
+| `--set ENABLE_DEBUG=false`   | `False` kiểu `bool` |
+| `--set ENABLE_DEBUG=true`    | `True` kiểu `bool`  |
+| `--set RATE=1.5`             | `1.5` kiểu `float`  |
+| `--set OPTIONAL_VALUE=null`  | `None`              |
+| `--set RUN_MODE=prod`        | `'prod'` kiểu `str` |
+| `--set RUN_MODE="prod"`      | `'prod'` kiểu `str` |
 
 ---
 
-## Bước 7: Push notebook lên Kaggle
+## 11. Kiểm tra nhanh cell config sau khi patch
 
-Sau khi notebook đã được patch, chạy:
+Cách 1: mở `main.ipynb` và xem cell config.
+
+Cách 2: dùng Python kiểm tra nhanh.
+
+Trên PowerShell:
+
+```powershell
+python -c "import nbformat; nb=nbformat.read('main.ipynb', as_version=4); [print(c.source) for c in nb.cells if c.cell_type=='code' and '# === KAGGLE_RUN_CONFIG ===' in c.source]"
+```
+
+Nếu dùng bản build:
+
+```powershell
+python -c "import nbformat; nb=nbformat.read('main.kaggle.ipynb', as_version=4); [print(c.source) for c in nb.cells if c.cell_type=='code' and '# === KAGGLE_RUN_CONFIG ===' in c.source]"
+```
+
+---
+
+## 12. Push notebook lên Kaggle
+
+Sau khi notebook đã được patch:
 
 ```powershell
 kaggle kernels push -p .
@@ -382,19 +497,21 @@ kaggle kernels push -p .
 
 Lệnh này sẽ:
 
-1. Đọc `kernel-metadata.json`.
-2. Lấy file notebook được khai báo trong `code_file`.
-3. Upload notebook lên Kaggle.
-4. Tạo version mới cho notebook/kernel.
-5. Kaggle tự bắt đầu chạy version mới đó.
+```text
+1. Đọc `kernel-metadata.json`
+2. Lấy file notebook được khai báo trong `code_file`
+3. Upload notebook lên Kaggle
+4. Tạo version mới cho notebook/kernel
+5. Kaggle tự chạy version mới đó
+```
 
-Nếu muốn dùng GPU, có thể chỉnh `enable_gpu` trong `kernel-metadata.json` thành:
+Nếu cần GPU, có thể chỉnh trong `kernel-metadata.json`:
 
 ```json
 "enable_gpu": "true"
 ```
 
-Hoặc dùng option accelerator nếu Kaggle CLI của bạn hỗ trợ:
+Hoặc nếu Kaggle CLI đang dùng có hỗ trợ accelerator:
 
 ```powershell
 kaggle kernels push -p . --accelerator NvidiaTeslaT4
@@ -402,9 +519,9 @@ kaggle kernels push -p . --accelerator NvidiaTeslaT4
 
 ---
 
-## Bước 8: Theo dõi trạng thái notebook sau khi push
+## 13. Theo dõi status và tải output
 
-Kiểm tra status:
+Kiểm tra trạng thái notebook:
 
 ```powershell
 kaggle kernels status your-kaggle-username/my-kaggle-notebook
@@ -416,13 +533,13 @@ Ví dụ:
 kaggle kernels status ohyun/my-kaggle-notebook
 ```
 
-Khi notebook chạy xong, bạn có thể tải output về:
+Tải output sau khi notebook chạy xong:
 
 ```powershell
 kaggle kernels output your-kaggle-username/my-kaggle-notebook -p ./output
 ```
 
-Nếu muốn ghi đè output cũ:
+Ghi đè output cũ nếu cần:
 
 ```powershell
 kaggle kernels output your-kaggle-username/my-kaggle-notebook -p ./output -o
@@ -430,7 +547,7 @@ kaggle kernels output your-kaggle-username/my-kaggle-notebook -p ./output -o
 
 ---
 
-## Bước 9: Tạo script PowerShell chạy trọn quy trình
+## 14. Script PowerShell chạy trọn quy trình
 
 Tạo file `push_to_kaggle.ps1`:
 
@@ -439,7 +556,8 @@ param(
     [string]$RunMode = "prod",
     [string]$HealthcheckUrl = "https://b6-remote-server-kaggle-2026.onrender.com/healthcheck",
     [int]$IntervalSeconds = 300,
-    [bool]$EnableDebug = $false
+    [bool]$EnableDebug = $false,
+    [string]$CurrentJobId = "job_001"
 )
 
 Write-Host "Patching notebook config..."
@@ -449,7 +567,8 @@ python patch_kaggle_notebook_config.py `
   --set RUN_MODE=$RunMode `
   --set HEALTHCHECK_URL=$HealthcheckUrl `
   --set INTERVAL_SECONDS=$IntervalSeconds `
-  --set ENABLE_DEBUG=$($EnableDebug.ToString().ToLower())
+  --set ENABLE_DEBUG=$($EnableDebug.ToString().ToLower()) `
+  --set CURRENT_JOB_ID=$CurrentJobId
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Patch notebook failed. Stop."
@@ -475,21 +594,23 @@ Chạy script:
   -RunMode "prod" `
   -HealthcheckUrl "https://b6-remote-server-kaggle-2026.onrender.com/healthcheck" `
   -IntervalSeconds 300 `
-  -EnableDebug $false
+  -EnableDebug $false `
+  -CurrentJobId "job_001"
 ```
 
 ---
 
-## Workflow thực tế mỗi lần muốn chạy Kaggle thật
+## 15. Workflow thực tế mỗi lần muốn chạy Kaggle
 
-Mỗi lần muốn chạy notebook trên Kaggle với value mới, chỉ cần làm:
+Mỗi lần muốn chạy notebook trên Kaggle với value mới:
 
 ```powershell
 .\push_to_kaggle.ps1 `
   -RunMode "prod" `
   -HealthcheckUrl "https://b6-remote-server-kaggle-2026.onrender.com/healthcheck" `
   -IntervalSeconds 300 `
-  -EnableDebug $false
+  -EnableDebug $false `
+  -CurrentJobId "job_001"
 ```
 
 Sau đó kiểm tra status:
@@ -506,11 +627,88 @@ kaggle kernels output your-kaggle-username/my-kaggle-notebook -p ./output -o
 
 ---
 
-## Best practice
+## 16. Cách tích hợp vào backend có `edit_vars`
 
-### 1. Luôn gom biến cần sửa vào một cell config duy nhất
+Nếu backend nhận `edit_vars` từ frontend, cần đảm bảo trước khi ghi vào notebook phải parse lại kiểu dữ liệu.
 
-Không nên rải biến config ở nhiều cell khác nhau vì script sẽ khó sửa chính xác.
+Ví dụ `edit_vars` nhận được:
+
+```python
+edit_vars = {
+    "CURRENT_JOB_ID": "job_001",
+    "ENABLE_DEBUG": "False",
+    "INTERVAL_SECONDS": "300",
+}
+```
+
+Không nên ghi trực tiếp:
+
+```python
+for key, value in edit_vars.items():
+    lines.append(f"{key} = {repr(value)}")
+```
+
+Vì kết quả sẽ sai:
+
+```python
+CURRENT_JOB_ID = 'job_001'
+ENABLE_DEBUG = 'False'
+INTERVAL_SECONDS = '300'
+```
+
+Nên parse trước khi ghi:
+
+```python
+for key, value in edit_vars.items():
+    parsed_value = _parse_value(value)
+    lines.append(f"{key} = {repr(parsed_value)}")
+```
+
+Kết quả đúng:
+
+```python
+CURRENT_JOB_ID = 'job_001'
+ENABLE_DEBUG = False
+INTERVAL_SECONDS = 300
+```
+
+Hàm `_parse_value()` có thể viết như sau:
+
+```python
+import json
+
+
+def _parse_value(raw):
+    if not isinstance(raw, str):
+        return raw
+
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return raw
+```
+
+Nếu trong code hiện tại có các file như:
+
+```text
+src/sub_dub_video_on_kaggle.py
+src/burn_ass_sub_music_on_kaggle.py
+```
+
+Thì phần build config cell nên sửa theo hướng:
+
+```diff
+for key, value in edit_vars.items():
+-    lines.append(f"{key} = {repr(value)}")
++    parsed_value = _parse_value(value)
++    lines.append(f"{key} = {repr(parsed_value)}")
+```
+
+---
+
+## 17. Best practices
+
+### 17.1. Gom tất cả biến cần sửa vào một cell config duy nhất
 
 Nên dùng:
 
@@ -521,7 +719,7 @@ INTERVAL_SECONDS = 300
 ENABLE_DEBUG = False
 ```
 
-Không nên dùng:
+Không nên rải biến ở nhiều cell:
 
 ```python
 # cell 1
@@ -534,64 +732,63 @@ INTERVAL_SECONDS = 300
 ENABLE_DEBUG = False
 ```
 
+Lý do: script sẽ khó tìm và sửa chính xác nếu config bị rải nhiều nơi.
+
 ---
 
-### 2. Dùng marker cố định để script tìm đúng cell
+### 17.2. Dùng marker cố định
 
-Marker nên là một dòng đặc biệt, ít có khả năng bị trùng:
+Nên dùng marker rõ ràng:
 
 ```python
 # === KAGGLE_RUN_CONFIG ===
 ```
 
-Không nên chỉ tìm theo tên biến như `RUN_MODE`, vì tên biến có thể xuất hiện ở nhiều nơi trong notebook.
+Không nên tìm cell theo tên biến như `RUN_MODE`, vì tên biến có thể xuất hiện ở nhiều cell khác.
 
 ---
 
-### 3. Không để secret trực tiếp trong notebook
+### 17.3. Không để secret trực tiếp trong notebook
 
-Không nên hard-code API key, token, password vào notebook rồi push lên Kaggle.
-
-Không nên:
+Không nên hard-code API key, token, password vào notebook:
 
 ```python
 OPENAI_API_KEY = "sk-xxxxx"
 ```
 
-Nên dùng Kaggle Secrets nếu cần secret khi chạy trên Kaggle.
+Nên dùng Kaggle Secrets hoặc cơ chế secret riêng của hệ thống.
 
 ---
 
-### 4. Luôn kiểm tra notebook sau khi patch
+### 17.4. Luôn kiểm tra notebook sau khi patch
 
-Trước khi push thật, có thể kiểm tra nhanh bằng cách mở notebook hoặc dùng lệnh:
+Trước khi push thật, nên kiểm tra cell config đã được ghi đúng kiểu dữ liệu chưa.
 
-```powershell
-python - << 'PY'
-import nbformat
-nb = nbformat.read('main.ipynb', as_version=4)
-for cell in nb.cells:
-    if cell.cell_type == 'code' and '# === KAGGLE_RUN_CONFIG ===' in cell.source:
-        print(cell.source)
-        break
-PY
+Đặc biệt kiểm tra các biến boolean và số:
+
+```python
+ENABLE_DEBUG = False
+INTERVAL_SECONDS = 300
 ```
 
-Trên PowerShell thuần, có thể dùng cách đơn giản hơn:
+Không được thành:
 
-```powershell
-python -c "import nbformat; nb=nbformat.read('main.ipynb', as_version=4); [print(c.source) for c in nb.cells if c.cell_type=='code' and '# === KAGGLE_RUN_CONFIG ===' in c.source]"
+```python
+ENABLE_DEBUG = 'False'
+INTERVAL_SECONDS = '300'
 ```
 
 ---
 
-### 5. Commit notebook trước khi patch nếu đang dùng Git
+### 17.5. Commit notebook trước khi patch nếu dùng Git
 
-Nếu muốn tránh việc patch làm bẩn file gốc, có 2 hướng:
+Nếu patch trực tiếp vào `main.ipynb`, file sẽ bị thay đổi trong Git.
+
+Có 2 hướng xử lý.
 
 #### Hướng A: Cho phép patch trực tiếp `main.ipynb`
 
-Sau khi chạy xong, commit lại nếu muốn lưu config đó.
+Phù hợp nếu bạn muốn lưu lại config đã chạy.
 
 #### Hướng B: Tạo bản notebook riêng để push
 
@@ -601,20 +798,21 @@ Ví dụ:
 python patch_kaggle_notebook_config.py `
   --notebook main.ipynb `
   --out main.kaggle.ipynb `
-  --set RUN_MODE=prod
+  --set RUN_MODE=prod `
+  --set ENABLE_DEBUG=false
 ```
 
-Sau đó sửa `kernel-metadata.json`:
+Sau đó chỉnh `kernel-metadata.json`:
 
 ```json
 "code_file": "main.kaggle.ipynb"
 ```
 
-Cách B giúp giữ `main.ipynb` sạch hơn, còn `main.kaggle.ipynb` là bản build để upload.
+Cách này giúp `main.ipynb` sạch hơn, còn `main.kaggle.ipynb` là bản build để upload.
 
 ---
 
-## Lỗi thường gặp
+## 18. Lỗi thường gặp và cách xử lý
 
 ### Lỗi 1: `kaggle: command not found`
 
@@ -626,7 +824,7 @@ Cách xử lý:
 python -m kaggle --help
 ```
 
-Nếu cách này chạy được, bạn có thể thay `kaggle` bằng `python -m kaggle` trong script.
+Nếu chạy được, có thể thay `kaggle` bằng `python -m kaggle` trong script.
 
 ---
 
@@ -661,7 +859,7 @@ Kiểm tra các field quan trọng:
 }
 ```
 
-Đặc biệt kiểm tra:
+Cần kiểm tra:
 
 - `id` có đúng username/slug không.
 - `code_file` có đúng tên file `.ipynb` không.
@@ -671,7 +869,7 @@ Kiểm tra các field quan trọng:
 
 ### Lỗi 4: Script không tìm thấy config cell
 
-Thông báo có thể là:
+Thông báo thường gặp:
 
 ```text
 Cannot find config cell marker: # === KAGGLE_RUN_CONFIG ===
@@ -688,29 +886,98 @@ Sau đó chạy lại script patch.
 
 ---
 
-## Kết luận
+### Lỗi 5: Thiếu `nbformat`
+
+Hiện tượng:
+
+```text
+No module named 'nbformat'
+```
+
+Hoặc log kiểu:
+
+```text
+Thiếu thư viện 'nbformat'. Cài bằng: pip install nbformat
+```
+
+Cách xử lý:
+
+```powershell
+pip install nbformat
+```
+
+Nếu dùng `.venv`:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install nbformat
+```
+
+Và thêm vào `requirements.txt`:
+
+```text
+nbformat
+```
+
+---
+
+### Lỗi 6: Biến `False` vẫn chạy như `True`
+
+Hiện tượng:
+
+```python
+ENABLE_DEBUG = 'False'
+```
+
+Và code:
+
+```python
+if ENABLE_DEBUG:
+    print("Debug mode")
+```
+
+vẫn chạy.
+
+Nguyên nhân: `'False'` là string không rỗng, nên trong Python nó là truthy.
+
+Cách xử lý: parse value trước khi dùng `repr()`:
+
+```python
+parsed_value = _parse_value(value)
+lines.append(f"{key} = {repr(parsed_value)}")
+```
+
+Kết quả đúng phải là:
+
+```python
+ENABLE_DEBUG = False
+```
+
+---
+
+## 19. Kết luận
 
 Cách làm chuẩn là:
 
 ```text
 Không sửa trực tiếp trên Kaggle UI
+→ tạo cell config có marker trong notebook
 → sửa biến trong notebook local bằng script
 → push notebook lên Kaggle bằng Kaggle API
-→ Kaggle chạy bản notebook mới đã được sửa value
+→ Kaggle chạy version notebook mới đã được sửa value
 ```
 
-Lệnh quan trọng nhất là:
+Hai lệnh quan trọng nhất:
 
 ```powershell
 python patch_kaggle_notebook_config.py --notebook main.ipynb --set RUN_MODE=prod
 kaggle kernels push -p .
 ```
 
-Nếu làm đúng, bạn có thể điều khiển value của biến trong notebook trước mỗi lần chạy Kaggle thật mà không cần mở trình duyệt để sửa tay.
+Nếu làm đúng, bạn có thể điều khiển biến trong Kaggle Notebook trước mỗi lần chạy thật mà không cần mở trình duyệt để sửa tay.
 
 ---
 
-## Nguồn tham khảo
+## 20. Nguồn tham khảo
 
 - Kaggle CLI documentation: https://github.com/Kaggle/kaggle-cli/blob/main/docs/README.md
 - Kaggle kernels command documentation: https://github.com/Kaggle/kaggle-cli/blob/main/docs/kernels.md

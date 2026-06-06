@@ -12,9 +12,9 @@ echo ================================================================
 echo.
 
 REM Kich hoat moi truong ao .venv tu thu muc goc
-if exist "..\..\.venv\Scripts\activate.bat" (
+if exist "..\.venv\Scripts\activate.bat" (
     echo [ENV] Đang kích hoạt môi trường ảo .venv tại thư mục gốc...
-    call "..\..\.venv\Scripts\activate.bat"
+    call "..\.venv\Scripts\activate.bat"
 ) else (
     echo [ENV] [CẢNH BÁO] Không tìm thấy môi trường ảo .venv tại thư mục gốc!
     echo [ENV] Sẽ thử chạy bằng Python mặc định của hệ thống.

@@ -9,11 +9,17 @@
         },
         {
           "name": "run_local_server"
+        },
+        {
+          "name": "extract_audio_from_video"
+        },
+        {
+          "name": "split_bgm_vocals_on_kaggle"
         }
       ],
-      "local_data_input": "D:\\D-Jobs\\ae-B6\\TikTok-Beta\\japan\\re-up\\phase nuôi acc\\thời kỳ xưa trên Trái Đất\\data-input",
+      "local_data_input": "D:\\D-Jobs\\ae-B6\\TikTok-Beta\\servers\\kaggle-client-execution\\media\\audios",
       "gdrive": {
-        "upload_gdrive_folder_url": "https://drive.google.com/drive/folders/1-nPUSPBIgzgCzAmbdbtGvbUl8BKDv6xq",
+        "upload_gdrive_folder_url": "https://drive.google.com/drive/folders/1Qaxq95EICRlXkcaIGzOe_GfzurSvuuW7",
         "rclone_config_path": "C:/Users/dell/AppData/Roaming/rclone/rclone.conf"
       },
       "kaggle": {
@@ -25,17 +31,19 @@
               "DATA_INPUT_GDRIVE_DIR_URL": "https://drive.google.com/drive/folders/1Qaxq95EICRlXkcaIGzOe_GfzurSvuuW7"
             },
             "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
-            "to_execute": false
+            "to_execute": true,
+            "notebook_to_execute": "kenkunkanki/transcribe-audio-file-flow"
           },
           {
             "notebook_to_execute": "hipbiquang/translate-srt-flow",
             "edit_vars": {
               "CURRENT_JOB_ID": "sub-dub-documentary-flims-01",
               "INPUT_DATA_GDRIVE_DIR_URL": "https://drive.google.com/open?id=1-nPUSPBIgzgCzAmbdbtGvbUl8BKDv6xq",
-              "MAX_GAP_BETWEEN_BLOCKS_IN_MS": 700
+              "MAX_GAP_BETWEEN_BLOCKS_IN_MS": 700,
+              "SKIP_LLM_TRANSLATION": true
             },
             "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
-            "to_execute": true
+            "to_execute": false
           },
           {
             "notebook_to_execute": "vanphongg/omnivoice-speech-flow",
@@ -61,13 +69,13 @@
           "name": "run_local_server"
         },
         {
-          "name": "check_valid_file_pairs"
+          "name": "check_if_video_file_exists"
         },
         {
-          "name": "check_if_video_file_exists"
+          "name": "check_valid_file_pairs"
         }
       ],
-      "local_data_input": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/media/others/music-videos",
+      "local_data_input": "D:\\D-Jobs\\ae-B6\\TikTok-Beta\\servers\\kaggle-client-execution\\media\\others\\music-videos",
       "gdrive": {
         "upload_gdrive_folder_url": "https://drive.google.com/drive/folders/1OKg3GUr8HpjlvzrcnQzOxxBaLVJvmGNZ",
         "rclone_config_path": "C:/Users/dell/AppData/Roaming/rclone/rclone.conf"
@@ -77,7 +85,8 @@
           {
             "notebook_to_execute": "kenkunkanki/assign-timestamp-for-each-word-flow",
             "edit_vars": {
-              "CURRENT_JOB_ID": "burn-sub-music-videos-01"
+              "CURRENT_JOB_ID": "burn-sub-music-videos-01",
+              "DATA_INPUT_GDRIVE_FOLDER_URL": "https://drive.google.com/drive/folders/1OKg3GUr8HpjlvzrcnQzOxxBaLVJvmGNZ"
             },
             "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
             "to_execute": true
@@ -85,7 +94,9 @@
           {
             "notebook_to_execute": "hipbiquang/display-words-on-video-by-timestamp",
             "edit_vars": {
-              "CURRENT_JOB_ID": "burn-sub-music-videos-01"
+              "CURRENT_JOB_ID": "burn-sub-music-videos-01",
+              "WORDS_FONT_FILE_NAME": "Montserrat-Bold.ttf",
+              "DATA_INPUT_LOCAL_DIR_PATH": "https://drive.google.com/drive/folders/1ePg6ZSn525yLNw0pJP9QBN9QHz058ShK"
             },
             "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
             "to_execute": false

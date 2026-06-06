@@ -1,2 +1,2 @@
 @echo off
-.\src\local-server\run-server.cmd
+.\local-server\run-server.cmd

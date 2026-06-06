@@ -143,6 +143,9 @@ def run_all_flows(config: dict) -> None:
         if title == "Tạo phụ đề & lồng tiếng cho video":
             from sub_dub_video_on_kaggle import run_feature
             run_feature(flow, flow_idx, total_flows, TMP_DIR)
+        elif title == "Gắn subtitle cho music video":
+            from burn_ass_sub_music_on_kaggle import run_feature
+            run_feature(flow, flow_idx, total_flows, TMP_DIR)
         else:
             logger.warning(f"  ⚠️  Chưa có kịch bản xử lý cho flow: '{title}'")
 

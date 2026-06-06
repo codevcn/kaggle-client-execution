@@ -1,7 +1,7 @@
 """
 Filter: run_local_server.py
 ======================================
-Khởi chạy local server qua file src/local-server/run-server.cmd.
+Khởi chạy local server qua file local-server/run-server.cmd.
 Nếu chạy thành công và local server kết nối/ping tới remote server thành công -> Filter thành công.
 Nếu thất bại hoặc timeout -> Filter thất bại và ném lỗi.
 """
@@ -21,7 +21,7 @@ from pathlib import Path
 FILTER_DIR = Path(__file__).resolve().parent  # …/src/filters/
 SRC_DIR = FILTER_DIR.parent  # …/src/
 ROOT_DIR = SRC_DIR.parent  # …/kaggle-client-execution/
-CMD_PATH = SRC_DIR / "local-server" / "run-server.cmd"
+CMD_PATH = ROOT_DIR / "local-server" / "run-server.cmd"
 
 # Cấu hình thời gian tối đa để chờ server khởi động và ping thành công (giây)
 MAX_WAIT_SECONDS = 30

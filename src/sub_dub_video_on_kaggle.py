@@ -151,7 +151,8 @@ def _build_config_cell_source(edit_vars: dict) -> str:
         "# Do not edit this cell manually before automated Kaggle push.\n",
     ]
     for key, value in edit_vars.items():
-        lines.append(f"{key} = {repr(value)}")
+        parsed_value = _parse_value(value)
+        lines.append(f"{key} = {repr(parsed_value)}")
     return "\n".join(lines)
 
 
