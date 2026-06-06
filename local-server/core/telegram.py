@@ -6,8 +6,10 @@ core/telegram.py — Telegram & Rclone Services
 import asyncio
 import logging
 from typing import List
+import datetime
 
 import httpx
+import state
 from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, CLONED_DATA_LOCAL_DIR_PATH, RCLONE_CONFIG_PATH
 
 logger = logging.getLogger("local-server")
@@ -67,7 +69,26 @@ async def handle_rclone_downloads(urls_to_handle: List[str], job_id: str = "unkn
     remote_name = _get_rclone_remote_name(RCLONE_CONFIG_PATH)
 
     async def _download_single(url: str):
-        folder_id = url.split("/")[-1].split("?")[0]
+        # Trích xuất folder_id từ nhiều dạng URL GDrive:
+        #   1. https://drive.google.com/drive/folders/FOLDER_ID
+        #   2. https://drive.google.com/open?id=FOLDER_ID
+        #   3. https://drive.google.com/file/d/FILE_ID/view
+        from urllib.parse import urlparse, parse_qs
+        parsed = urlparse(url)
+        qs = parse_qs(parsed.query)
+
+        if "id" in qs:
+            # Dạng ?id=FOLDER_ID (open, uc, export...)
+            folder_id = qs["id"][0]
+        else:
+            # Dạng /folders/FOLDER_ID hoặc /d/FILE_ID
+            parts = [p for p in parsed.path.split("/") if p]
+            folder_id = parts[-1] if parts else ""
+
+        if not folder_id or folder_id in ("open", "view", "edit"):
+            logger.error(f"❌ Không thể trích xuất folder_id hợp lệ từ URL: {url}")
+            await send_telegram_message(f"❌ URL GDrive không hợp lệ, không tìm được ID:\n<code>{url}</code>")
+            return
         
         # Xử lý prefix cho thư mục tải về: {job_id}-{notebook_title}-{date.now()}
         # Làm sạch notebook_title tránh ký tự đặc biệt của OS
@@ -105,6 +126,14 @@ async def handle_rclone_downloads(urls_to_handle: List[str], job_id: str = "unkn
                 msg = f"✅ Tải thành công từ {url}"
                 logger.info(msg)
                 await send_telegram_message(msg)
+
+                # Đăng ký folder vào state để hiển thị trên UI
+                state.downloaded_folders.append({
+                    "name": folder_name,
+                    "path": local_target_dir,
+                    "source_url": url,
+                    "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                })
             else:
                 err_text = stderr.decode()[:500]
                 msg = f"❌ Lỗi rclone tải {url}:\n<pre>{err_text}</pre>"

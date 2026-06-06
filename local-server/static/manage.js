@@ -77,6 +77,7 @@ function renderFlows() {
 
     const card = document.createElement("div");
     card.className = "flow-card";
+    card.id = `flow-card-${index}`;
     card.innerHTML = `
       <div class="flow-header">
         <h2>Flow #${index + 1}: <span id="title-display-${index}" style="color:var(--text-main); font-weight:500; font-size:1.1rem">${flow.flow_title || "Mới"}</span></h2>
@@ -153,6 +154,50 @@ function renderFlows() {
     renderEntranceFilters(index);
     renderNotebooks(index);
   });
+  
+  renderToc();
+}
+
+function renderToc() {
+  const tocContainer = document.getElementById("toc-container");
+  const tocList = document.getElementById("toc-list");
+  
+  if (!configData.flows || configData.flows.length === 0) {
+    tocContainer.style.display = "none";
+    return;
+  }
+  
+  tocContainer.style.display = "flex";
+  tocList.innerHTML = "";
+  
+  configData.flows.forEach((flow, index) => {
+    const title = flow.flow_title || "Flow mới";
+    const a = document.createElement("a");
+    a.href = `#flow-card-${index}`;
+    a.className = "toc-item";
+    a.textContent = `${index + 1}. ${title}`;
+    a.title = title;
+    
+    // Add instant scroll listener — offset by sticky header height
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      const target = document.getElementById(`flow-card-${index}`);
+      if (target) {
+        const header = document.querySelector("header");
+        const headerH = header ? header.offsetHeight : 0;
+        const EXTRA_GAP = 16; // khoảng cách thêm để dễ nhìn
+        const targetTop = target.getBoundingClientRect().top + window.scrollY - headerH - EXTRA_GAP;
+        window.scrollTo({ top: targetTop, behavior: "instant" });
+
+        // Highlight effect
+        target.style.transition = "box-shadow 0.3s";
+        target.style.boxShadow = "0 0 20px rgba(59, 130, 246, 0.5)";
+        setTimeout(() => target.style.boxShadow = "", 1500);
+      }
+    });
+    
+    tocList.appendChild(a);
+  });
 }
 
 function renderEntranceFilters(flowIndex) {
@@ -205,6 +250,7 @@ function renderEntranceFilters(flowIndex) {
 
 function updateTitleDisplay(index, val) {
   document.getElementById(`title-display-${index}`).textContent = val || "Mới";
+  renderToc();
 }
 
 function updateFlowData(index, field, value) {
@@ -771,7 +817,81 @@ async function reopenLogModal() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 6. GDRIVE MODAL
+// 6. FOLDERS MODAL
+// ─────────────────────────────────────────────────────────────
+
+async function openFoldersModal() {
+  document.getElementById("folders-modal-backdrop").style.display = "flex";
+  await renderFoldersModal();
+}
+
+function closeFoldersModal(event) {
+  if (event && event.target !== document.getElementById("folders-modal-backdrop")) return;
+  document.getElementById("folders-modal-backdrop").style.display = "none";
+}
+
+async function renderFoldersModal() {
+  const container = document.getElementById("folders-list-container");
+  container.innerHTML = `<p style="color:var(--text-muted); text-align:center; font-style:italic;">Đang tải...</p>`;
+
+  try {
+    const res = await fetch("/api/downloaded-folders");
+    const data = await res.json();
+    const folders = data.folders || [];
+
+    if (folders.length === 0) {
+      container.innerHTML = `
+        <div style="text-align:center; padding: 2rem;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="1.5" style="margin-bottom:1rem"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          <p style="color:var(--text-muted); font-style:italic;">Chưa có folder nào được tải về trong phiên này.</p>
+          <p style="color:#6a798e; font-size:0.82rem; margin-top:0.5rem;">Danh sách tự động reset khi server khởi động lại.</p>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = "";
+    folders.forEach((folder) => {
+      const card = document.createElement("div");
+      card.className = "folder-card";
+      card.title = "Nhấn để mở folder trong File Explorer";
+      card.innerHTML = `
+        <div class="folder-card-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </div>
+        <div class="folder-card-info">
+          <div class="folder-card-name">${escapeHtml(folder.name)}</div>
+          <div class="folder-card-path">${escapeHtml(folder.path)}</div>
+          <div class="folder-card-meta">Tải lúc: ${escapeHtml(folder.created_at)} &nbsp;|&nbsp; <a href="${escapeHtml(folder.source_url)}" target="_blank" rel="noopener" style="color:#60a5fa; text-decoration:none;" onclick="event.stopPropagation()">Nguồn GDrive ↗</a></div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      `;
+      card.addEventListener("click", () => openFolder(folder.path));
+      container.appendChild(card);
+    });
+  } catch (e) {
+    container.innerHTML = `<p style="color:var(--danger); text-align:center;">Lỗi tải danh sách: ${e.message}</p>`;
+  }
+}
+
+async function openFolder(path) {
+  try {
+    const res = await fetch("/api/open-folder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    });
+    const data = await res.json();
+    if (res.ok) showToast("Đã mở folder trong File Explorer!", "success");
+    else showToast(data.detail || "Không thể mở folder!", "error");
+  } catch (e) {
+    showToast("Lỗi: " + e.message, "error");
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 7. GDRIVE MODAL
 // ─────────────────────────────────────────────────────────────
 
 function openGdriveModal() {

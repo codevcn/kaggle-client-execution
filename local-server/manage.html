@@ -30,6 +30,13 @@
           </svg>
           Phím tắt
         </button>
+        <button class="btn btn-folders" onclick="openFoldersModal()" title="Danh sách folder đã tải về">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            <line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line>
+          </svg>
+          Folders
+        </button>
         <button class="btn btn-outline" onclick="openDocsModal()" title="Xem Tài Liệu">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
@@ -66,6 +73,17 @@
       </div>
     </main>
 
+    <!-- Table of Contents -->
+    <div id="toc-container" class="toc-container" style="display: none;">
+      <div class="toc-handle">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+      </div>
+      <div class="toc-content">
+        <div class="toc-title">Mục Lục Flow</div>
+        <div class="toc-list" id="toc-list"></div>
+      </div>
+    </div>
+
     <div id="toast-container"></div>
 
     <!-- Floating Buttons -->
@@ -90,6 +108,28 @@
       </span>
       Chạy Tất Cả Flow
     </button>
+
+    <!-- Folders Modal -->
+    <div class="modal-backdrop" id="folders-modal-backdrop" onclick="closeFoldersModal(event)">
+      <div class="gdrive-modal" style="max-width: 700px;">
+        <div class="gdrive-modal-header">
+          <div class="gdrive-modal-title" style="color: #a78bfa;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+            Folders đã tải về (reset khi khởi động lại server)
+          </div>
+          <button class="btn-icon" onclick="closeFoldersModal()" style="padding: 0.4rem; color: var(--text-muted)" title="Đóng">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="gdrive-modal-body" style="padding: 1.5rem;">
+          <div id="folders-list-container">
+            <p style="color: var(--text-muted); font-style: italic; text-align: center;">Chưa có folder nào được tải về.</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- GDrive URLs Modal -->
     <div class="modal-backdrop" id="gdrive-modal-backdrop" onclick="closeGdriveModal(event)">

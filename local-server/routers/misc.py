@@ -9,9 +9,12 @@ Endpoints:
 
 import json
 import logging
+import subprocess
+import sys
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel
 
 from config import MANAGE_HTML_PATH
 from models import TestPayload
@@ -44,8 +47,8 @@ def receive_test_data(payload: TestPayload):
     API giả lập nhận dữ liệu — dùng để test thủ công.
 
     Ví dụ:
-        curl -X POST "http://127.0.0.1:8000/receive-test-data" \\
-             -H "Content-Type: application/json" \\
+        curl -X POST "http://127.0.0.1:8000/receive-test-data" \\\
+             -H "Content-Type: application/json" \\\
              -d '{"action":"test","job_id":"job-abc-123","data":{"msg":"Hello"}}'
     """
     print("\n" + "=" * 60)
@@ -58,3 +61,35 @@ def receive_test_data(payload: TestPayload):
         "message": "Đã giả lập nhận payload thành công. Xem log tại Console của Local Server.",
         "payload_received": payload.dict(),
     }
+
+
+@router.get("/api/downloaded-folders")
+def get_downloaded_folders():
+    """Trả về danh sách các folder đã tải về từ GDrive URL (lưu trong bộ nhớ, reset khi server khởi động lại)."""
+    return JSONResponse(content={"folders": state.downloaded_folders})
+
+
+class OpenFolderBody(BaseModel):
+    path: str
+
+
+@router.post("/api/open-folder")
+def open_folder(body: OpenFolderBody):
+    """Mở một folder trong File Explorer của Windows/Mac/Linux."""
+    import os
+    from pathlib import Path
+
+    folder_path = Path(body.path)
+    if not folder_path.exists():
+        raise HTTPException(status_code=404, detail=f"Folder không tồn tại: {body.path}")
+
+    try:
+        if sys.platform == "win32":
+            subprocess.Popen(["explorer", str(folder_path)])
+        elif sys.platform == "darwin":
+            subprocess.Popen(["open", str(folder_path)])
+        else:
+            subprocess.Popen(["xdg-open", str(folder_path)])
+        return {"success": True, "message": f"Đã mở folder: {body.path}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Không thể mở folder: {e}")
