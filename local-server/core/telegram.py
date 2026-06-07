@@ -64,8 +64,8 @@ async def handle_rclone_downloads(urls_to_handle: List[str], job_id: str = "unkn
         return
 
     import os
-    import datetime
     import re
+    import subprocess
     remote_name = _get_rclone_remote_name(RCLONE_CONFIG_PATH)
 
     async def _download_single(url: str):
@@ -97,9 +97,12 @@ async def handle_rclone_downloads(urls_to_handle: List[str], job_id: str = "unkn
         now_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         folder_name = f"{job_id}-{safe_title}-{now_str}"
         
-        local_target_dir = os.path.join(CLONED_DATA_LOCAL_DIR_PATH, folder_name)
+        # Dùng Path để normalize, sau đó convert sang string với forward slash
+        # tránh mixed separator trên Windows gây lỗi rclone
+        from pathlib import Path
+        local_target_dir = str(Path(CLONED_DATA_LOCAL_DIR_PATH) / folder_name)
 
-        msg_start = f"⏳ Bắt đầu tải dữ liệu từ {url}\nThư mục đích: <code>{local_target_dir}</code>"
+        msg_start = f"💻 Bắt đầu tải dữ liệu từ {url}\nThư mục đích: <code>{local_target_dir}</code>"
         logger.info(f"⬇️ {msg_start}")
         await send_telegram_message(msg_start)
 
@@ -114,15 +117,28 @@ async def handle_rclone_downloads(urls_to_handle: List[str], job_id: str = "unkn
         ]
 
         logger.info(f"🚀 Lệnh chạy rclone: {' '.join(cmd)}")
-        try:
-            proc = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
-            stdout, stderr = await proc.communicate()
 
-            if proc.returncode == 0:
+        # Dùng asyncio.to_thread + subprocess.run thay cho create_subprocess_exec
+        # để tránh lỗi SelectorEventLoop trên Windows (uvicorn mặc định)
+        def _run_rclone():
+            return subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+
+        try:
+            result = await asyncio.to_thread(_run_rclone)
+
+            if result.stdout.strip():
+                logger.info(f"[rclone stdout]\n{result.stdout.strip()}")
+            if result.stderr.strip():
+                logger.warning(f"[rclone stderr]\n{result.stderr.strip()}")
+
+            if result.returncode == 0:
                 msg = f"✅ Tải thành công từ {url}"
                 logger.info(msg)
                 await send_telegram_message(msg)
@@ -135,9 +151,9 @@ async def handle_rclone_downloads(urls_to_handle: List[str], job_id: str = "unkn
                     "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 })
             else:
-                err_text = stderr.decode()[:500]
-                msg = f"❌ Lỗi rclone tải {url}:\n<pre>{err_text}</pre>"
-                logger.error(msg)
+                err_text = (result.stderr or "")[:500]
+                msg = f"❌ Lỗi rclone (exit={result.returncode}) tải {url}:\n<pre>{err_text}</pre>"
+                logger.error(f"❌ rclone exit={result.returncode}: {err_text}")
                 await send_telegram_message(msg)
         except Exception as e:
             logger.error(f"❌ Lỗi thực thi rclone: {e}")
@@ -146,3 +162,4 @@ async def handle_rclone_downloads(urls_to_handle: List[str], job_id: str = "unkn
     # Khởi chạy song song
     tasks = [_download_single(url) for url in urls_to_handle]
     await asyncio.gather(*tasks)
+

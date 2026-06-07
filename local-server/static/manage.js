@@ -111,7 +111,12 @@ function renderFlows() {
 
       <div class="form-group">
         <label>Local Data Input Path</label>
-        <input type="text" class="form-control" value="${escapeHtml(flow.local_data_input || "")}" oninput="updateFlowData(${index}, 'local_data_input', this.value)">
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <input type="text" class="form-control" id="local-data-input-${index}" value="${escapeHtml(flow.local_data_input || "")}" oninput="updateFlowData(${index}, 'local_data_input', this.value)" style="flex: 1;">
+          <button class="btn-icon" title="Mở folder trong File Explorer" onclick="openLocalDataFolder(${index})" style="color: #a78bfa; padding: 0.4rem; flex-shrink: 0; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-tertiary); cursor: pointer; display: flex; align-items: center; transition: background 0.2s, color 0.2s;" onmouseover="this.style.background='#3b1fa3'; this.style.color='#fff';" onmouseout="this.style.background='var(--bg-tertiary)'; this.style.color='#a78bfa';">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          </button>
+        </div>
       </div>
 
       <div class="grid-2">
@@ -455,8 +460,24 @@ function updateNbEditVarKey(flowIndex, nbIndex, oldKey, newKey) {
   renderNotebooks(flowIndex);
 }
 
+function parseEditVarValue(val) {
+  // Tự động detect và convert sang đúng kiểu JS:
+  // "true"/"false" (case-insensitive) → boolean
+  // số nguyên/số thực → number
+  // còn lại → giữ nguyên string
+  const trimmed = typeof val === "string" ? val.trim() : val;
+  if (trimmed.toLowerCase() === "true") return true;
+  if (trimmed.toLowerCase() === "false") return false;
+  // Thử parse số: chỉ khi string không rỗng và là số thuần túy
+  if (trimmed !== "" && !isNaN(trimmed) && trimmed !== " ") {
+    const num = Number(trimmed);
+    if (!isNaN(num)) return num;
+  }
+  return val; // giữ nguyên string
+}
+
 function updateNbEditVarValue(flowIndex, nbIndex, key, val) {
-  getNotebooks(flowIndex)[nbIndex].edit_vars[key] = val;
+  getNotebooks(flowIndex)[nbIndex].edit_vars[key] = parseEditVarValue(val);
 }
 
 function removeNbEditVar(flowIndex, nbIndex, key) {
@@ -888,6 +909,16 @@ async function openFolder(path) {
   } catch (e) {
     showToast("Lỗi: " + e.message, "error");
   }
+}
+
+async function openLocalDataFolder(flowIndex) {
+  const input = document.getElementById(`local-data-input-${flowIndex}`);
+  const path = input ? input.value.trim() : "";
+  if (!path) {
+    showToast("Chưa có đường dẫn trong Local Data Input Path!", "error");
+    return;
+  }
+  await openFolder(path);
 }
 
 // ─────────────────────────────────────────────────────────────

@@ -139,10 +139,26 @@ def run_all_flows(config: dict) -> None:
             logger.error(f"  ❌ Flow {flow_idx}: Entrance filter thất bại — bỏ qua flow này.")
             continue
 
-        # ── Route flow ──────────────────────────────────────────
+        # ── Route flow → dynamic dispatch theo field "module" ────
+        module_name: str = flow.get("module", "").strip()
+        if not module_name:
+            logger.error(
+                f"  ❌ Flow {flow_idx}: Thiếu field 'module' trong config — bỏ qua flow này."
+            )
+            continue
+
         try:
-            from sub_dub_video_on_kaggle import run_feature
-            run_feature(flow, flow_idx, total_flows, TMP_DIR)
+            import importlib
+            mod = importlib.import_module(f"flow_modules.{module_name}")
+        except ModuleNotFoundError:
+            logger.error(
+                f"  ❌ Flow {flow_idx}: Không tìm thấy FlowModule "
+                f"'flow_modules.{module_name}' — bỏ qua flow này."
+            )
+            continue
+
+        try:
+            mod.Module(flow, flow_idx, total_flows, TMP_DIR).run()
         except Exception as e:
             logger.error(f"  ❌ Lỗi khi chạy flow '{title}': {e}")
 

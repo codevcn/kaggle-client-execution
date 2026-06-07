@@ -1,7 +1,8 @@
 {
   "flows": [
     {
-      "skip": false,
+      "skip": true,
+      "module": "split_bgm_vocals",
       "flow_title": "Tách nhạc nền và lời",
       "entrance_filters": [
         {
@@ -20,7 +21,7 @@
             "edit_vars": {
               "CURRENT_JOB_ID": "demucs-split-bgm-vocals-01",
               "DATA_INPUT_GDRIVE_DIR_URL": "https://drive.google.com/drive/folders/1QMWUxtQHc5hS5Mad_J-1NbPM8XDCpfua",
-              "MASTER_CONTROLLER_WEBHOOK_URL": "https://exams-thee-heroes-circular.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://ten-corresponding-nationally-cruz.trycloudflare.com/webhook/notebook",
               "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026"
             },
             "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
@@ -31,7 +32,8 @@
       }
     },
     {
-      "skip": false,
+      "skip": true,
+      "module": "sub_dub_video",
       "flow_title": "Tạo phụ đề & lồng tiếng cho video",
       "entrance_filters": [],
       "local_data_input": "D:\\D-Jobs\\ae-B6\\TikTok-Beta\\servers\\kaggle-client-execution\\media\\audios",
@@ -46,7 +48,7 @@
             "edit_vars": {
               "CURRENT_JOB_ID": "sub-dub-documentary-flims-01",
               "DATA_INPUT_GDRIVE_DIR_URL": "https://drive.google.com/drive/folders/1Qaxq95EICRlXkcaIGzOe_GfzurSvuuW7",
-              "MASTER_CONTROLLER_WEBHOOK_URL": "https://exams-thee-heroes-circular.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://ten-corresponding-nationally-cruz.trycloudflare.com/webhook/notebook",
               "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026"
             },
             "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
@@ -60,8 +62,8 @@
               "CURRENT_JOB_ID": "sub-dub-documentary-flims-01",
               "INPUT_DATA_GDRIVE_DIR_URL": "https://drive.google.com/open?id=1-nPUSPBIgzgCzAmbdbtGvbUl8BKDv6xq",
               "MAX_GAP_BETWEEN_BLOCKS_IN_MS": 700,
-              "SKIP_LLM_TRANSLATION": "false",
-              "MASTER_CONTROLLER_WEBHOOK_URL": "https://exams-thee-heroes-circular.trycloudflare.com/webhook/notebook",
+              "SKIP_LLM_TRANSLATION": false,
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://ten-corresponding-nationally-cruz.trycloudflare.com/webhook/notebook",
               "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026"
             },
             "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
@@ -74,7 +76,7 @@
               "CURRENT_JOB_ID": "sub-dub-documentary-flims-01",
               "DATA_INPUT_DRIVE_FOLDER_LINK": "https://drive.google.com/open?id=1-nPUSPBIgzgCzAmbdbtGvbUl8BKDv6xq",
               "REF_AUDIO_GDRIVE_FOLDER_URL": "https://drive.google.com/drive/folders/1Su0cEIZpWYguSdbWlQTlzgEM6T17ml6b?usp=sharing",
-              "MASTER_CONTROLLER_WEBHOOK_URL": "https://exams-thee-heroes-circular.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://ten-corresponding-nationally-cruz.trycloudflare.com/webhook/notebook",
               "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026"
             },
             "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
@@ -85,7 +87,8 @@
       }
     },
     {
-      "skip": false,
+      "skip": true,
+      "module": "assign_each_word",
       "flow_title": "Gắn each-word cho music video",
       "entrance_filters": [
         {
@@ -110,7 +113,7 @@
             "edit_vars": {
               "CURRENT_JOB_ID": "burn-sub-music-videos-01",
               "DATA_INPUT_GDRIVE_FOLDER_URL": "https://drive.google.com/drive/folders/1OKg3GUr8HpjlvzrcnQzOxxBaLVJvmGNZ",
-              "MASTER_CONTROLLER_WEBHOOK_URL": "https://exams-thee-heroes-circular.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://ten-corresponding-nationally-cruz.trycloudflare.com/webhook/notebook",
               "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026"
             },
             "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
@@ -123,7 +126,7 @@
               "CURRENT_JOB_ID": "burn-sub-music-videos-01",
               "WORDS_FONT_FILE_NAME": "Montserrat-Bold.ttf",
               "DATA_INPUT_LOCAL_DIR_PATH": "https://drive.google.com/drive/folders/1ePg6ZSn525yLNw0pJP9QBN9QHz058ShK",
-              "MASTER_CONTROLLER_WEBHOOK_URL": "https://exams-thee-heroes-circular.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://ten-corresponding-nationally-cruz.trycloudflare.com/webhook/notebook",
               "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026"
             },
             "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
@@ -135,6 +138,7 @@
     },
     {
       "skip": false,
+      "module": "align_music_lyrics",
       "flow_title": "Align lyrics khớp với bài hát",
       "entrance_filters": [
         {
@@ -153,7 +157,7 @@
             "edit_vars": {
               "CURRENT_JOB_ID": "align-music-lyrics-01",
               "DATA_INPUT_GDRIVE_DIR_LINK": "https://drive.google.com/drive/folders/1xFg-qzNme60FWRsHYSDCILUdndDzmnxb",
-              "MASTER_CONTROLLER_WEBHOOK_URL": "https://exams-thee-heroes-circular.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://ten-corresponding-nationally-cruz.trycloudflare.com/webhook/notebook",
               "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026"
             },
             "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",

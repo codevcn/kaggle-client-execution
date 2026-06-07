@@ -1,8 +1,9 @@
 """
-Feature Module: Burn ass subtitle & music cho video
-=================================================
-Được gọi từ main.py khi chạy flow tương ứng.
-Thực hiện upload lên GDrive và kích hoạt Kaggle notebook.
+kaggle_utils.py
+===============
+Shared utilities dùng chung cho tất cả FlowModule.
+Chứa toàn bộ logic: Kaggle trigger, rclone upload, notebook patching.
+Không import từ bất kỳ FlowModule nào — không có circular dependency.
 """
 
 import json
@@ -18,7 +19,13 @@ logger = logging.getLogger(__name__)
 # Marker cố định để nhận diện cell config trong notebook
 _KAGGLE_CONFIG_MARKER = "# === KAGGLE_RUN_CONFIG ==="
 
+
+# ──────────────────────────────────────────────────────────────
+# Credentials & Config helpers
+# ──────────────────────────────────────────────────────────────
+
 def load_kaggle_accounts(credentials_path: str) -> dict[str, str]:
+    """Đọc KAGGLE_ACCOUNTS từ file .env và trả về dict {username: api_key}."""
     env_file = Path(credentials_path)
     if not env_file.exists():
         raise FileNotFoundError(f"Không tìm thấy file credentials: {credentials_path}")
@@ -29,7 +36,7 @@ def load_kaggle_accounts(credentials_path: str) -> dict[str, str]:
         if line.startswith("#") or not line:
             continue
         if line.startswith("KAGGLE_ACCOUNTS="):
-            value = line[len("KAGGLE_ACCOUNTS=") :]
+            value = line[len("KAGGLE_ACCOUNTS="):]
             value = value.strip().strip("\"'")
             try:
                 accounts = json.loads(value)
@@ -45,18 +52,8 @@ def load_kaggle_accounts(credentials_path: str) -> dict[str, str]:
     raise KeyError(f"Không tìm thấy key KAGGLE_ACCOUNTS trong {credentials_path}")
 
 
-def collect_works_to_upload(local_data_input: str) -> list[Path]:
-    folder = Path(local_data_input)
-    if not folder.exists():
-        logger.warning(f"  ⚠️  Thư mục local_data_input không tồn tại: {folder}")
-        return []
-
-    works = sorted([d for d in folder.iterdir() if d.is_dir()])
-    logger.info(f"  📂 Tìm thấy {len(works)} work (sub-dir) trong {folder}")
-    return works
-
-
 def extract_gdrive_folder_id(gdrive_folder_url: str) -> str:
+    """Trích xuất folder ID từ Google Drive URL."""
     match = re.search(r"/folders/([^/?&]+)", gdrive_folder_url)
     if not match:
         raise ValueError(f"Không thể trích xuất folder ID từ URL: {gdrive_folder_url}")
@@ -64,6 +61,7 @@ def extract_gdrive_folder_id(gdrive_folder_url: str) -> str:
 
 
 def get_rclone_remote_name(rclone_config_path: str) -> str:
+    """Đọc tên remote đầu tiên từ file rclone.conf."""
     config_file = Path(rclone_config_path)
     if not config_file.exists():
         raise FileNotFoundError(f"Không tìm thấy rclone config: {rclone_config_path}")
@@ -78,7 +76,75 @@ def get_rclone_remote_name(rclone_config_path: str) -> str:
     raise ValueError(f"Không tìm thấy remote nào trong rclone config: {rclone_config_path}")
 
 
-def upload_work_to_gdrive(work_dir: Path, gdrive_folder_url: str, rclone_config_path: str) -> bool:
+# ──────────────────────────────────────────────────────────────
+# rclone Upload helpers
+# ──────────────────────────────────────────────────────────────
+
+def upload_file_to_gdrive(
+    file_path: Path,
+    gdrive_folder_url: str,
+    rclone_config_path: str,
+    tmp_dir: Path,
+) -> bool:
+    """
+    Upload 1 file lên GDrive qua rclone sync.
+    Tạo staging dir tạm để đảm bảo chỉ file đó được sync (tránh xóa nhầm).
+    """
+    folder_id = extract_gdrive_folder_id(gdrive_folder_url)
+    remote_name = get_rclone_remote_name(rclone_config_path)
+    rclone_remote_root = f"{remote_name}:"
+
+    staging_dir = tmp_dir / f"_staging_{file_path.stem}"
+    staging_dir.mkdir(parents=True, exist_ok=True)
+    staging_file = staging_dir / file_path.name
+
+    try:
+        shutil.copy2(file_path, staging_file)
+        logger.info(f"  📦 Staging: {file_path.name}  →  {staging_dir}")
+
+        cmd = [
+            "rclone", "sync",
+            str(staging_dir),
+            rclone_remote_root,
+            "--drive-root-folder-id", folder_id,
+            "--config", rclone_config_path,
+            "--progress", "--stats-one-line", "--log-level", "INFO",
+        ]
+
+        logger.info(f"  📤 rclone sync: {file_path.name}  →  GDrive folder ID [{folder_id}]")
+        logger.info(f"       (file cũ trên GDrive sẽ bị xóa)")
+        logger.info(f"       Lệnh: {' '.join(cmd)}")
+
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+
+        if result.stdout.strip():
+            logger.info(f"       [rclone stdout]\n{result.stdout.strip()}")
+        if result.stderr.strip():
+            logger.warning(f"       [rclone stderr]\n{result.stderr.strip()}")
+
+        if result.returncode != 0:
+            logger.error(f"  ❌ Sync thất bại (returncode={result.returncode}): {file_path.name}")
+            return False
+
+        logger.info(f"  ✅ Sync thành công: {file_path.name}")
+        logger.info(f"  🔗 GDrive folder: {gdrive_folder_url}")
+        return True
+
+    finally:
+        if staging_dir.exists():
+            shutil.rmtree(staging_dir, ignore_errors=True)
+            logger.info(f"  🧹 Đã xóa staging dir: {staging_dir.name}")
+
+
+def upload_dir_to_gdrive(
+    dir_path: Path,
+    gdrive_folder_url: str,
+    rclone_config_path: str,
+) -> bool:
+    """
+    Upload toàn bộ nội dung 1 thư mục lên GDrive qua rclone sync.
+    Không cần staging dir — sync trực tiếp thư mục.
+    """
     folder_id = extract_gdrive_folder_id(gdrive_folder_url)
     remote_name = get_rclone_remote_name(rclone_config_path)
     rclone_remote_root = f"{remote_name}:"
@@ -86,14 +152,14 @@ def upload_work_to_gdrive(work_dir: Path, gdrive_folder_url: str, rclone_config_
     try:
         cmd = [
             "rclone", "sync",
-            str(work_dir),
+            str(dir_path),
             rclone_remote_root,
             "--drive-root-folder-id", folder_id,
             "--config", rclone_config_path,
             "--progress", "--stats-one-line", "--log-level", "INFO",
         ]
 
-        logger.info(f"  📤 rclone sync: {work_dir.name} (dir)  →  GDrive folder ID [{folder_id}]")
+        logger.info(f"  📤 rclone sync: {dir_path.name} (dir)  →  GDrive folder ID [{folder_id}]")
         logger.info(f"       (file/thư mục cũ trên GDrive sẽ bị xóa để đồng bộ)")
         logger.info(f"       Lệnh: {' '.join(cmd)}")
 
@@ -105,33 +171,52 @@ def upload_work_to_gdrive(work_dir: Path, gdrive_folder_url: str, rclone_config_
             logger.warning(f"       [rclone stderr]\n{result.stderr.strip()}")
 
         if result.returncode != 0:
-            logger.error(f"  ❌ Sync thất bại (returncode={result.returncode}): {work_dir.name}")
+            logger.error(f"  ❌ Sync thất bại (returncode={result.returncode}): {dir_path.name}")
             return False
 
-        logger.info(f"  ✅ Sync thành công: {work_dir.name} (Gdrive đã được đồng bộ)")
+        logger.info(f"  ✅ Sync thành công: {dir_path.name}")
         logger.info(f"  🔗 GDrive folder: {gdrive_folder_url}")
         return True
 
     except Exception as e:
-        logger.error(f"  ❌ Lỗi khi upload {work_dir.name}: {e}")
+        logger.error(f"  ❌ Lỗi khi upload {dir_path.name}: {e}")
         return False
 
 
+# ──────────────────────────────────────────────────────────────
+# Notebook patching helpers
+# ──────────────────────────────────────────────────────────────
+
 def _filter_stderr(raw_stderr: str) -> str:
+    """Lọc bỏ các warning không liên quan từ stderr của subprocess."""
     return "\n".join(
         line for line in raw_stderr.splitlines()
         if "SyntaxWarning" not in line and "invalid escape sequence" not in line
     ).strip()
 
 
-def _parse_value(raw: str):
+def _parse_value(raw):
     """
-    Parse value từ string sang kiểu Python phù hợp.
-    Ví dụ: "300" → 300 (int), "true" → True (bool), "1.5" → 1.5 (float), "prod" → "prod" (str)
+    Parse value sang kiểu Python phù hợp.
+    - bool/int/float từ JSON native → giữ nguyên
+    - String "true"/"false" → bool
+    - String số → int/float
+    - Còn lại → giữ nguyên string
     """
+    if isinstance(raw, bool):
+        return raw
+    if isinstance(raw, (int, float)):
+        return raw
+    if not isinstance(raw, str):
+        return raw
+    stripped = raw.strip()
+    if stripped.lower() == "true":
+        return True
+    if stripped.lower() == "false":
+        return False
     try:
-        return json.loads(raw)
-    except (json.JSONDecodeError, TypeError):
+        return json.loads(stripped)
+    except (json.JSONDecodeError, ValueError):
         return raw
 
 
@@ -152,8 +237,7 @@ def patch_notebook_config_cell(notebook_path: Path, edit_vars: dict) -> bool:
     """
     Tìm cell có marker KAGGLE_RUN_CONFIG trong file .ipynb và thay thế
     toàn bộ nội dung cell đó bằng các biến trong edit_vars.
-
-    Trả về True nếu patch thành công, False nếu không tìm thấy marker.
+    Trả về True nếu patch thành công.
     """
     try:
         import nbformat
@@ -189,12 +273,19 @@ def patch_notebook_config_cell(notebook_path: Path, edit_vars: dict) -> bool:
     return True
 
 
+# ──────────────────────────────────────────────────────────────
+# Kaggle notebook trigger
+# ──────────────────────────────────────────────────────────────
+
 def trigger_kaggle_notebook(
     notebook_ref: str,
     kaggle_accounts: dict[str, str],
     tmp_dir: Path,
     edit_vars: dict | None = None,
 ) -> bool:
+    """
+    Pull notebook từ Kaggle, patch edit_vars (nếu có), rồi push lại để kích hoạt chạy.
+    """
     username = notebook_ref.split("/")[0]
     if username not in kaggle_accounts:
         logger.error(f"  ❌ Không tìm thấy API Key cho tài khoản [{username}] (notebook: {notebook_ref}).")
@@ -213,13 +304,21 @@ def trigger_kaggle_notebook(
     logger.info(f"  📁 Thư mục tạm: {folder_path}")
 
     try:
+        # ── Bước 1: Pull metadata ────────────────────────────────
         logger.info(f"  🔽 [Bước 1] Pull metadata: {notebook_ref}")
         pull_meta_cmd = ["kaggle", "kernels", "pull", notebook_ref, "-p", str(folder_path), "-m"]
-        pull_meta_result = subprocess.run(pull_meta_cmd, env=isolated_env, capture_output=True, text=True, encoding="utf-8", errors="replace")
+        pull_meta_result = subprocess.run(
+            pull_meta_cmd, env=isolated_env,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
 
         real_stderr_meta = _filter_stderr(pull_meta_result.stderr)
         if pull_meta_result.returncode != 0:
-            logger.error(f"  ❌ Lỗi pull metadata {notebook_ref}:\n       stderr: {real_stderr_meta}\n       stdout: {pull_meta_result.stdout.strip()}")
+            logger.error(
+                f"  ❌ Lỗi pull metadata {notebook_ref}:\n"
+                f"       stderr: {real_stderr_meta}\n"
+                f"       stdout: {pull_meta_result.stdout.strip()}"
+            )
             return False
 
         if real_stderr_meta:
@@ -227,13 +326,21 @@ def trigger_kaggle_notebook(
         if pull_meta_result.stdout.strip():
             logger.info(f"       ✅ {pull_meta_result.stdout.strip()}")
 
+        # ── Bước 2: Pull notebook code ───────────────────────────
         logger.info(f"  🔽 [Bước 2] Pull notebook code: {notebook_ref}")
         pull_nb_cmd = ["kaggle", "kernels", "pull", notebook_ref, "-p", str(folder_path)]
-        pull_nb_result = subprocess.run(pull_nb_cmd, env=isolated_env, capture_output=True, text=True, encoding="utf-8", errors="replace")
+        pull_nb_result = subprocess.run(
+            pull_nb_cmd, env=isolated_env,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
 
         real_stderr_nb = _filter_stderr(pull_nb_result.stderr)
         if pull_nb_result.returncode != 0:
-            logger.error(f"  ❌ Lỗi pull notebook code {notebook_ref}:\n       stderr: {real_stderr_nb}\n       stdout: {pull_nb_result.stdout.strip()}")
+            logger.error(
+                f"  ❌ Lỗi pull notebook code {notebook_ref}:\n"
+                f"       stderr: {real_stderr_nb}\n"
+                f"       stdout: {pull_nb_result.stdout.strip()}"
+            )
             return False
 
         if real_stderr_nb:
@@ -241,9 +348,8 @@ def trigger_kaggle_notebook(
         if pull_nb_result.stdout.strip():
             logger.info(f"       ✅ {pull_nb_result.stdout.strip()}")
 
-        # ── Patch edit_vars vào cell config của notebook (nếu có) ─────────
+        # ── Bước 2.5: Patch edit_vars vào notebook ───────────────
         if edit_vars:
-            # Tìm file .ipynb đã pull về trong folder_path
             ipynb_files = list(folder_path.glob("*.ipynb"))
             if ipynb_files:
                 notebook_file = ipynb_files[0]
@@ -252,6 +358,7 @@ def trigger_kaggle_notebook(
             else:
                 logger.warning("  ⚠️  Không tìm thấy file .ipynb để patch edit_vars.")
 
+        # ── Chuẩn hóa kernel-metadata.json ───────────────────────
         metadata_path = folder_path / "kernel-metadata.json"
         if metadata_path.exists():
             meta = json.loads(metadata_path.read_text(encoding="utf-8"))
@@ -261,22 +368,30 @@ def trigger_kaggle_notebook(
 
             meta["enable_internet"] = True
             logger.info("       🌐 Đã đảm bảo enable_internet = true")
-
             metadata_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
+        # ── Bước 3: Push để kích hoạt chạy ───────────────────────
         logger.info(f"  🚀 [Bước 3] Push notebook để kích hoạt chạy: {notebook_ref}")
         push_cmd = ["kaggle", "kernels", "push", "-p", str(folder_path)]
-        push_result = subprocess.run(push_cmd, env=isolated_env, capture_output=True, text=True, encoding="utf-8", errors="replace")
+        push_result = subprocess.run(
+            push_cmd, env=isolated_env,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
 
         real_stderr_push = _filter_stderr(push_result.stderr)
         if push_result.returncode != 0:
-            logger.error(f"  ❌ Lỗi push notebook {notebook_ref}:\n       stderr: {real_stderr_push}\n       stdout: {push_result.stdout.strip()}")
+            logger.error(
+                f"  ❌ Lỗi push notebook {notebook_ref}:\n"
+                f"       stderr: {real_stderr_push}\n"
+                f"       stdout: {push_result.stdout.strip()}"
+            )
             return False
 
         if real_stderr_push:
             logger.warning(f"       [stderr] {real_stderr_push}")
         if push_result.stdout.strip():
             logger.info(f"       ✅ {push_result.stdout.strip()}")
+
         logger.info(f"  🎉 Notebook kích hoạt thành công: {notebook_ref}")
         return True
 
@@ -284,102 +399,3 @@ def trigger_kaggle_notebook(
         if folder_path.exists():
             shutil.rmtree(folder_path, ignore_errors=True)
             logger.info(f"  🧹 Đã xóa thư mục tạm: {folder_path.name}")
-
-
-def run_feature(flow: dict, flow_idx: int, total_flows: int, tmp_dir: Path) -> None:
-    local_data_input: str = flow.get("local_data_input", "")
-
-    gdrive_cfg: dict = flow.get("gdrive", {})
-    gdrive_folder_url: str = gdrive_cfg.get("upload_gdrive_folder_url", "")
-    rclone_config_path: str = gdrive_cfg.get("rclone_config_path", "")
-
-    # ── Đọc cấu trúc kaggle mới: { "notbooks": [...] } ────────────────────
-    kaggle_cfg: dict = flow.get("kaggle", {})
-    notebooks: list = kaggle_cfg.get("notbooks", [])
-
-    # Tìm notebook duy nhất có to_execute = true
-    active_notebook: dict | None = None
-    for nb in notebooks:
-        if nb.get("to_execute") is True:
-            active_notebook = nb
-            break
-
-    if active_notebook is None:
-        logger.error(
-            f"  ❌ Flow {flow_idx}: Không tìm thấy notebook nào có 'to_execute: true' "
-            f"trong kaggle.notbooks — bỏ qua flow này."
-        )
-        return
-
-    notebook_to_execute: str = active_notebook.get("notebook_to_execute", "")
-    credentials_path: str = active_notebook.get("credentials_path", "")
-    edit_vars: dict = active_notebook.get("edit_vars", {})
-
-    logger.info(f"   local_data_input   : {local_data_input}")
-    logger.info(f"   gdrive_folder_url  : {gdrive_folder_url}")
-    logger.info(f"   rclone_config_path : {rclone_config_path}")
-    logger.info(f"   notebook_to_execute: {notebook_to_execute}  [to_execute=true]")
-    logger.info(f"   credentials_path   : {credentials_path}")
-    logger.info(f"   Tổng notebooks trong flow: {len(notebooks)} (chỉ 1 được chạy)")
-    logger.info(f"{'═'*60}")
-
-    missing = []
-    if not local_data_input:
-        missing.append("local_data_input")
-    if not gdrive_folder_url:
-        missing.append("gdrive.upload_gdrive_folder_url")
-    if not rclone_config_path:
-        missing.append("gdrive.rclone_config_path")
-    if not notebook_to_execute:
-        missing.append("kaggle.notbooks[to_execute].notebook_to_execute")
-    if not credentials_path:
-        missing.append("kaggle.notbooks[to_execute].credentials_path")
-
-    if missing:
-        logger.error(f"  ❌ Flow {flow_idx}: Thiếu các trường bắt buộc: {missing} — bỏ qua flow này.")
-        return
-
-    try:
-        kaggle_accounts = load_kaggle_accounts(credentials_path)
-    except (FileNotFoundError, KeyError, ValueError) as e:
-        logger.error(f"  ❌ Flow {flow_idx}: Không load được Kaggle credentials: {e} — bỏ qua flow này.")
-        return
-
-    works_to_process = collect_works_to_upload(local_data_input)
-    if not works_to_process:
-        logger.warning(f"  ⚠️  Flow {flow_idx}: Không tìm thấy work (sub-dir) nào trong '{local_data_input}' — kết thúc flow.")
-        return
-
-    total_works = len(works_to_process)
-    works_success = 0
-    works_failed  = 0
-
-    for work_idx, work_dir in enumerate(works_to_process, start=1):
-        logger.info(f"\n  ── Work {work_idx}/{total_works}: {work_dir.name} ──")
-
-        upload_ok = upload_work_to_gdrive(
-            work_dir=work_dir,
-            gdrive_folder_url=gdrive_folder_url,
-            rclone_config_path=rclone_config_path,
-        )
-        if not upload_ok:
-            logger.error(f"  ❌ Upload thất bại cho work {work_dir.name} — bỏ qua trigger Kaggle cho work này.")
-            works_failed += 1
-            continue
-
-        kaggle_ok = trigger_kaggle_notebook(
-            notebook_ref=notebook_to_execute,
-            kaggle_accounts=kaggle_accounts,
-            tmp_dir=tmp_dir,
-            edit_vars=edit_vars if edit_vars else None,
-        )
-        if kaggle_ok:
-            works_success += 1
-            logger.info(f"  ✅ Hoàn tất work {work_idx}/{total_works}: {work_dir.name}")
-        else:
-            works_failed += 1
-            logger.error(f"  ❌ Trigger Kaggle thất bại cho work {work_dir.name}")
-
-    logger.info(f"\n  📊 Flow {flow_idx} hoàn tất — kết quả xử lý {total_works} work:")
-    logger.info(f"     ✅ Work thành công : {works_success}/{total_works}")
-    logger.info(f"     ❌ Work thất bại   : {works_failed}/{total_works}")
