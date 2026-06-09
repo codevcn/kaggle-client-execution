@@ -1,17 +1,19 @@
 {
   "flows": [
     {
-      "skip": true,
+      "skip": false,
       "module": "split_bgm_vocals",
-      "flow_title": "Tách nhạc nền và lời",
+      "flow_title": "Tách nhạc nền và lời 1",
       "entrance_filters": [
         {
-          "name": "extract_audio_from_video"
+          "name": "extract_audio_from_video",
+          "input_path": "D:\\D-Jobs\\ae-B6\\TikTok-Beta\\servers\\kaggle-client-execution\\media\\videos\\4",
+          "output_path": "D:\\D-Jobs\\ae-B6\\TikTok-Beta\\servers\\kaggle-client-execution\\media\\audios\\4"
         }
       ],
-      "local_data_input": "D:\\\\D-Jobs\\\\ae-B6\\\\TikTok-Beta\\\\servers\\\\kaggle-client-execution\\\\media\\\\audios",
+      "local_data_input": "D:\\D-Jobs\\ae-B6\\TikTok-Beta\\\\servers\\kaggle-client-execution\\media\\audios\\4",
       "gdrive": {
-        "upload_gdrive_folder_url": "https://drive.google.com/drive/folders/1QMWUxtQHc5hS5Mad_J-1NbPM8XDCpfua",
+        "upload_gdrive_folder_url": "https://drive.google.com/drive/folders/1YJv6b5toIVqko6u5f7ZKmjwR8xYJtZ7F",
         "rclone_config_path": "C:/Users/dell/AppData/Roaming/rclone/rclone.conf"
       },
       "kaggle": {
@@ -19,10 +21,11 @@
           {
             "notebook_to_execute": "nguyenthanhtrungn21/demucs-split-bgm-vocals-flow",
             "edit_vars": {
-              "CURRENT_JOB_ID": "demucs-split-bgm-vocals-01",
-              "DATA_INPUT_GDRIVE_DIR_URL": "https://drive.google.com/drive/folders/1QMWUxtQHc5hS5Mad_J-1NbPM8XDCpfua",
-              "MASTER_CONTROLLER_WEBHOOK_URL": "https://ten-corresponding-nationally-cruz.trycloudflare.com/webhook/notebook",
-              "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026"
+              "CURRENT_JOB_ID": "demucs-split-bgm-vocals---3b2w9cjJ",
+              "DATA_INPUT_GDRIVE_DIR_URL": "https://drive.google.com/drive/folders/1YJv6b5toIVqko6u5f7ZKmjwR8xYJtZ7F",
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://identified-trivia-barry-safari.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026",
+              "UPLOAD_DATA_GDRIVE_DIR_PATH": "codevcn-dell-pc:ae-b6/tiktok-beta-JAPAN/kaggle/split-bridged-data/1/"
             },
             "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
             "to_execute": true,
@@ -34,11 +37,17 @@
     {
       "skip": true,
       "module": "sub_dub_video",
-      "flow_title": "Tạo phụ đề & lồng tiếng cho video",
-      "entrance_filters": [],
-      "local_data_input": "D:\\D-Jobs\\ae-B6\\TikTok-Beta\\servers\\kaggle-client-execution\\media\\audios",
+      "flow_title": "Tạo phụ đề & lồng tiếng cho video 1",
+      "entrance_filters": [
+        {
+          "name": "extract_audio_from_video",
+          "input_path": "D:\\D-Jobs\\ae-B6\\TikTok-Beta\\servers\\kaggle-client-execution\\media\\videos\\1",
+          "output_path": "D:\\D-Jobs\\ae-B6\\TikTok-Beta\\servers\\kaggle-client-execution\\media\\audios\\1"
+        }
+      ],
+      "local_data_input": "D:\\D-Jobs\\ae-B6\\TikTok-Beta\\servers\\kaggle-client-execution\\media\\audios\\1",
       "gdrive": {
-        "upload_gdrive_folder_url": "https://drive.google.com/drive/folders/1Qaxq95EICRlXkcaIGzOe_GfzurSvuuW7",
+        "upload_gdrive_folder_url": "https://drive.google.com/drive/folders/186QJK5UD_KkDIG9CRUgsLZjUrbFNhb6Q",
         "rclone_config_path": "C:/Users/dell/AppData/Roaming/rclone/rclone.conf"
       },
       "kaggle": {
@@ -46,10 +55,12 @@
           {
             " ": "kenkunkanki/transcribe-audio-file-flow",
             "edit_vars": {
-              "CURRENT_JOB_ID": "sub-dub-documentary-flims-01",
-              "DATA_INPUT_GDRIVE_DIR_URL": "https://drive.google.com/drive/folders/1Qaxq95EICRlXkcaIGzOe_GfzurSvuuW7",
-              "MASTER_CONTROLLER_WEBHOOK_URL": "https://ten-corresponding-nationally-cruz.trycloudflare.com/webhook/notebook",
-              "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026"
+              "CURRENT_JOB_ID": "sub-dub-documentary-flims---NhFOEk1Y",
+              "DATA_INPUT_GDRIVE_DIR_URL": "https://drive.google.com/drive/folders/186QJK5UD_KkDIG9CRUgsLZjUrbFNhb6Q",
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://identified-trivia-barry-safari.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026",
+              "UPLOAD_DATA_GDRIVE_DIR_PATH": "codevcn-dell-pc:ae-b6/tiktok-beta-JAPAN/kaggle/movie-bridged-data/1/",
+              "NEXT_KAGGLE_NOTEBOOK": "hipbiquang/translate-srt-flow"
             },
             "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
             "to_execute": true,
@@ -59,12 +70,14 @@
           {
             "notebook_to_execute": "hipbiquang/translate-srt-flow",
             "edit_vars": {
-              "CURRENT_JOB_ID": "sub-dub-documentary-flims-01",
-              "INPUT_DATA_GDRIVE_DIR_URL": "https://drive.google.com/open?id=1-nPUSPBIgzgCzAmbdbtGvbUl8BKDv6xq",
+              "CURRENT_JOB_ID": "sub-dub-documentary-flims---NhFOEk1Y",
+              "INPUT_DATA_GDRIVE_DIR_URL": "https://drive.google.com/drive/folders/1lCt0kttfmwi0_lGg5nk3i_0xXErvMLi_",
               "MAX_GAP_BETWEEN_BLOCKS_IN_MS": 700,
               "SKIP_LLM_TRANSLATION": false,
-              "MASTER_CONTROLLER_WEBHOOK_URL": "https://ten-corresponding-nationally-cruz.trycloudflare.com/webhook/notebook",
-              "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026"
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://identified-trivia-barry-safari.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026",
+              "UPLOAD_DATA_GDRIVE_DIR_PATH": "codevcn-dell-pc:ae-b6/tiktok-beta-JAPAN/kaggle/movie-bridged-data/1/",
+              "NEXT_KAGGLE_NOTEBOOK": "vanphongg/omnivoice-speech-flow"
             },
             "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
             "to_execute": false,
@@ -73,15 +86,148 @@
           {
             "notebook_to_execute": "vanphongg/omnivoice-speech-flow",
             "edit_vars": {
-              "CURRENT_JOB_ID": "sub-dub-documentary-flims-01",
-              "DATA_INPUT_DRIVE_FOLDER_LINK": "https://drive.google.com/open?id=1-nPUSPBIgzgCzAmbdbtGvbUl8BKDv6xq",
+              "CURRENT_JOB_ID": "sub-dub-documentary-flims---NhFOEk1Y",
+              "DATA_INPUT_DRIVE_FOLDER_LINK": "https://drive.google.com/drive/folders/1lCt0kttfmwi0_lGg5nk3i_0xXErvMLi_",
               "REF_AUDIO_GDRIVE_FOLDER_URL": "https://drive.google.com/drive/folders/1Su0cEIZpWYguSdbWlQTlzgEM6T17ml6b?usp=sharing",
-              "MASTER_CONTROLLER_WEBHOOK_URL": "https://ten-corresponding-nationally-cruz.trycloudflare.com/webhook/notebook",
-              "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026"
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://identified-trivia-barry-safari.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026",
+              "UPLOAD_DATA_GDRIVE_DIR_PATH": "codevcn-dell-pc:ae-b6/tiktok-beta-JAPAN/kaggle/movie-bridged-data/1/"
             },
             "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
             "to_execute": false,
             "notebook_link_to_edit": "https://www.kaggle.com/code/vanphongg/omnivoice-speech-flow/edit"
+          }
+        ]
+      }
+    },
+    {
+      "skip": true,
+      "module": "sub_dub_video",
+      "flow_title": "Tạo phụ đề & lồng tiếng cho video 2",
+      "entrance_filters": [
+        {
+          "name": "extract_audio_from_video",
+          "input_path": "D:\\D-Jobs\\ae-B6\\TikTok-Beta\\servers\\kaggle-client-execution\\media\\videos\\2",
+          "output_path": "D:\\D-Jobs\\ae-B6\\TikTok-Beta\\servers\\kaggle-client-execution\\media\\audios\\2"
+        }
+      ],
+      "local_data_input": "D:\\D-Jobs\\ae-B6\\TikTok-Beta\\servers\\kaggle-client-execution\\media\\audios\\2",
+      "gdrive": {
+        "upload_gdrive_folder_url": "https://drive.google.com/drive/folders/1ahcRyJOh4wxxPDgy-Q-tsUVXvtLnUo9B",
+        "rclone_config_path": "C:/Users/dell/AppData/Roaming/rclone/rclone.conf"
+      },
+      "kaggle": {
+        "notbooks": [
+          {
+            " ": "kenkunkanki/transcribe-audio-file-flow",
+            "edit_vars": {
+              "CURRENT_JOB_ID": "sub-dub-documentary-flims---cgD2msmI",
+              "DATA_INPUT_GDRIVE_DIR_URL": "https://drive.google.com/drive/folders/1ahcRyJOh4wxxPDgy-Q-tsUVXvtLnUo9B",
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://identified-trivia-barry-safari.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026",
+              "UPLOAD_DATA_GDRIVE_DIR_PATH": "codevcn-dell-pc:ae-b6/tiktok-beta-JAPAN/kaggle/movie-bridged-data/2/",
+              "NEXT_KAGGLE_NOTEBOOK": "vanphongg/translate-srt-flow-2"
+            },
+            "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
+            "to_execute": true,
+            "notebook_to_execute": "hipbiquang/transcribe-audio-file-flow-2",
+            "notebook_link_to_edit": "https://www.kaggle.com/code/hipbiquang/transcribe-audio-file-flow-2/edit"
+          },
+          {
+            "notebook_to_execute": "vanphongg/translate-srt-flow-2",
+            "edit_vars": {
+              "CURRENT_JOB_ID": "sub-dub-documentary-flims---cgD2msmI",
+              "INPUT_DATA_GDRIVE_DIR_URL": "https://drive.google.com/drive/folders/19O1b7TJ5kewGlsTZrMU3BKd97gc6QlNb",
+              "MAX_GAP_BETWEEN_BLOCKS_IN_MS": 700,
+              "SKIP_LLM_TRANSLATION": false,
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://identified-trivia-barry-safari.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026",
+              "UPLOAD_DATA_GDRIVE_DIR_PATH": "codevcn-dell-pc:ae-b6/tiktok-beta-JAPAN/kaggle/movie-bridged-data/2/",
+              "NEXT_KAGGLE_NOTEBOOK": "kenkunkanki/omnivoice-speech-flow-2"
+            },
+            "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
+            "to_execute": false,
+            "notebook_link_to_edit": "https://www.kaggle.com/code/vanphongg/translate-srt-flow-2/edit"
+          },
+          {
+            "notebook_to_execute": "kenkunkanki/omnivoice-speech-flow-2",
+            "edit_vars": {
+              "CURRENT_JOB_ID": "sub-dub-documentary-flims---cgD2msmI",
+              "DATA_INPUT_DRIVE_FOLDER_LINK": "https://drive.google.com/drive/folders/19O1b7TJ5kewGlsTZrMU3BKd97gc6QlNb",
+              "REF_AUDIO_GDRIVE_FOLDER_URL": "https://drive.google.com/drive/folders/1Su0cEIZpWYguSdbWlQTlzgEM6T17ml6b?usp=sharing",
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://identified-trivia-barry-safari.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026",
+              "UPLOAD_DATA_GDRIVE_DIR_PATH": "codevcn-dell-pc:ae-b6/tiktok-beta-JAPAN/kaggle/movie-bridged-data/2/"
+            },
+            "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
+            "to_execute": false,
+            "notebook_link_to_edit": "https://www.kaggle.com/code/kenkunkanki/omnivoice-speech-flow-2/edit"
+          }
+        ]
+      }
+    },
+    {
+      "skip": true,
+      "module": "sub_dub_video",
+      "flow_title": "Tạo phụ đề & lồng tiếng cho video 3",
+      "entrance_filters": [
+        {
+          "name": "extract_audio_from_video",
+          "input_path": "D:\\D-Jobs\\ae-B6\\TikTok-Beta\\servers\\kaggle-client-execution\\media\\videos\\3",
+          "output_path": "D:\\D-Jobs\\ae-B6\\TikTok-Beta\\servers\\kaggle-client-execution\\media\\audios\\3"
+        }
+      ],
+      "local_data_input": "D:\\D-Jobs\\ae-B6\\TikTok-Beta\\servers\\kaggle-client-execution\\media\\audios\\3",
+      "gdrive": {
+        "upload_gdrive_folder_url": "https://drive.google.com/drive/folders/1qI4CFoNs7u1EOc5xGUxb3mP3IxT2qY9g",
+        "rclone_config_path": "C:/Users/dell/AppData/Roaming/rclone/rclone.conf"
+      },
+      "kaggle": {
+        "notbooks": [
+          {
+            " ": "kenkunkanki/transcribe-audio-file-flow",
+            "edit_vars": {
+              "CURRENT_JOB_ID": "sub-dub-documentary-flims---iup5cR4n",
+              "DATA_INPUT_GDRIVE_DIR_URL": "https://drive.google.com/drive/folders/1qI4CFoNs7u1EOc5xGUxb3mP3IxT2qY9g",
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://identified-trivia-barry-safari.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026",
+              "UPLOAD_DATA_GDRIVE_DIR_PATH": "codevcn-dell-pc:ae-b6/tiktok-beta-JAPAN/kaggle/movie-bridged-data/3/",
+              "NEXT_KAGGLE_NOTEBOOK": "kenkunkanki/translate-srt-flow-3"
+            },
+            "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
+            "to_execute": true,
+            "notebook_to_execute": "vanphongg/transcribe-audio-file-flow-3",
+            "notebook_link_to_edit": "https://www.kaggle.com/code/vanphongg/transcribe-audio-file-flow-3/edit"
+          },
+          {
+            "notebook_to_execute": "kenkunkanki/translate-srt-flow-3",
+            "edit_vars": {
+              "CURRENT_JOB_ID": "sub-dub-documentary-flims---iup5cR4n",
+              "INPUT_DATA_GDRIVE_DIR_URL": "https://drive.google.com/drive/folders/1My_ltV0xG9oheoK_6nVLa9udBv5LLdvu",
+              "MAX_GAP_BETWEEN_BLOCKS_IN_MS": 700,
+              "SKIP_LLM_TRANSLATION": false,
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://identified-trivia-barry-safari.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026",
+              "UPLOAD_DATA_GDRIVE_DIR_PATH": "codevcn-dell-pc:ae-b6/tiktok-beta-JAPAN/kaggle/movie-bridged-data/3/",
+              "NEXT_KAGGLE_NOTEBOOK": "hipbiquang/omnivoice-speech-flow-3"
+            },
+            "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
+            "to_execute": false,
+            "notebook_link_to_edit": "https://www.kaggle.com/code/kenkunkanki/translate-srt-flow-3/edit"
+          },
+          {
+            "notebook_to_execute": "hipbiquang/omnivoice-speech-flow-3",
+            "edit_vars": {
+              "CURRENT_JOB_ID": "sub-dub-documentary-flims---iup5cR4n",
+              "DATA_INPUT_DRIVE_FOLDER_LINK": "https://drive.google.com/drive/folders/1My_ltV0xG9oheoK_6nVLa9udBv5LLdvu",
+              "REF_AUDIO_GDRIVE_FOLDER_URL": "https://drive.google.com/drive/folders/1Su0cEIZpWYguSdbWlQTlzgEM6T17ml6b?usp=sharing",
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://identified-trivia-barry-safari.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026",
+              "UPLOAD_DATA_GDRIVE_DIR_PATH": "codevcn-dell-pc:ae-b6/tiktok-beta-JAPAN/kaggle/movie-bridged-data/3/"
+            },
+            "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
+            "to_execute": false,
+            "notebook_link_to_edit": "https://www.kaggle.com/code/hipbiquang/omnivoice-speech-flow-3/edit"
           }
         ]
       }
@@ -111,9 +257,9 @@
           {
             "notebook_to_execute": "kenkunkanki/assign-timestamp-for-each-word-flow",
             "edit_vars": {
-              "CURRENT_JOB_ID": "burn-sub-music-videos-01",
+              "CURRENT_JOB_ID": "burn-sub-music-videos---5wbprgy7",
               "DATA_INPUT_GDRIVE_FOLDER_URL": "https://drive.google.com/drive/folders/1OKg3GUr8HpjlvzrcnQzOxxBaLVJvmGNZ",
-              "MASTER_CONTROLLER_WEBHOOK_URL": "https://ten-corresponding-nationally-cruz.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://identified-trivia-barry-safari.trycloudflare.com/webhook/notebook",
               "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026"
             },
             "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
@@ -123,10 +269,10 @@
           {
             "notebook_to_execute": "hipbiquang/display-words-on-video-by-timestamp",
             "edit_vars": {
-              "CURRENT_JOB_ID": "burn-sub-music-videos-01",
+              "CURRENT_JOB_ID": "burn-sub-music-videos---5wbprgy7",
               "WORDS_FONT_FILE_NAME": "Montserrat-Bold.ttf",
               "DATA_INPUT_LOCAL_DIR_PATH": "https://drive.google.com/drive/folders/1ePg6ZSn525yLNw0pJP9QBN9QHz058ShK",
-              "MASTER_CONTROLLER_WEBHOOK_URL": "https://ten-corresponding-nationally-cruz.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://identified-trivia-barry-safari.trycloudflare.com/webhook/notebook",
               "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026"
             },
             "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",
@@ -137,7 +283,7 @@
       }
     },
     {
-      "skip": false,
+      "skip": true,
       "module": "align_music_lyrics",
       "flow_title": "Align lyrics khớp với bài hát",
       "entrance_filters": [
@@ -155,9 +301,9 @@
           {
             "notebook_to_execute": "hipbiquang/align-music-lyrics-flow",
             "edit_vars": {
-              "CURRENT_JOB_ID": "align-music-lyrics-01",
+              "CURRENT_JOB_ID": "align-music-lyrics---tfWYUynI",
               "DATA_INPUT_GDRIVE_DIR_LINK": "https://drive.google.com/drive/folders/1xFg-qzNme60FWRsHYSDCILUdndDzmnxb",
-              "MASTER_CONTROLLER_WEBHOOK_URL": "https://ten-corresponding-nationally-cruz.trycloudflare.com/webhook/notebook",
+              "MASTER_CONTROLLER_WEBHOOK_URL": "https://identified-trivia-barry-safari.trycloudflare.com/webhook/notebook",
               "MASTER_CONTROLLER_API_KEY": "b6-remote-server-kaggle-2026"
             },
             "credentials_path": "D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env",

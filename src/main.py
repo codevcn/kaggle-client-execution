@@ -72,8 +72,20 @@ def run_entrance_filters(entrance_filters: list[dict]) -> bool:
             return False
 
         logger.info(f"  ▶️  [{idx}/{total}] Chạy filter: {filter_name}.py")
+        cmd = [sys.executable, "-u", str(filter_file)]
+        
+        kwargs = f_cfg.get("kwargs", {})
+        
+        for direct_key in ["input_path", "output_path"]:
+            if direct_key in f_cfg and f_cfg[direct_key]:
+                kwargs[direct_key] = f_cfg[direct_key]
+                
+        for k, v in kwargs.items():
+            if v:
+                cmd.extend([f"--{k}", str(v)])
+                
         process = subprocess.Popen(
-            [sys.executable, "-u", str(filter_file)],
+            cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,

@@ -143,13 +143,7 @@ async def handle_rclone_downloads(urls_to_handle: List[str], job_id: str = "unkn
                 logger.info(msg)
                 await send_telegram_message(msg)
 
-                # Đăng ký folder vào state để hiển thị trên UI
-                state.downloaded_folders.append({
-                    "name": folder_name,
-                    "path": local_target_dir,
-                    "source_url": url,
-                    "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                })
+
             else:
                 err_text = (result.stderr or "")[:500]
                 msg = f"❌ Lỗi rclone (exit={result.returncode}) tải {url}:\n<pre>{err_text}</pre>"

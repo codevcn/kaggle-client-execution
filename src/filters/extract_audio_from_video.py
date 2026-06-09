@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import argparse
 from pathlib import Path
 
 # Fix UnicodeEncodeError khi print tiếng Việt trên Windows (cp1252 → utf-8)
@@ -76,12 +77,14 @@ def extract_audio_from_videos(input_folder_path: str, output_folder_path: str) -
 
         # Xây dựng câu lệnh FFmpeg
         # -y: Ghi đè tệp nếu đã tồn tại mà không cần hỏi
+        # -nostdin: Vô hiệu hóa tương tác qua stdin để ngăn FFmpeg bị treo
         # -i: Đường dẫn tệp đầu vào
         # -vn: Bỏ qua luồng video (chỉ lấy âm thanh)
         # -acodec pcm_s16le -ar 44100 -ac 2: Các thông số chuẩn cho tệp wav chất lượng tốt
         command = [
             "ffmpeg",
             "-y",
+            "-nostdin",
             "-i",
             str(video_path),
             "-vn",
@@ -97,8 +100,10 @@ def extract_audio_from_videos(input_folder_path: str, output_folder_path: str) -
         try:
             print(f"Đang xử lý: {video_path.name} -> {output_filename}")
             # Thực thi lệnh FFmpeg, ẩn các thông báo log dài dòng của FFmpeg
+            # Thiết lập stdin=subprocess.DEVNULL để chắc chắn FFmpeg không cố đọc input từ terminal
             subprocess.run(
                 command,
+                stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 check=True,
@@ -116,8 +121,14 @@ def extract_audio_from_videos(input_folder_path: str, output_folder_path: str) -
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Extract audio from videos.")
+    parser.add_argument("--input_path", type=str, default=str(INPUT_FOLDER_PATH), help="Input folder containing videos")
+    parser.add_argument("--output_path", type=str, default=str(OUTPUT_FOLDER_PATH), help="Output folder for extracted audio")
+    
+    args = parser.parse_args()
+
     # Thực thi hàm chính
     extract_audio_from_videos(
-        INPUT_FOLDER_PATH,
-        OUTPUT_FOLDER_PATH,
+        args.input_path,
+        args.output_path,
     )

@@ -65,7 +65,16 @@ async def process_webhook_background(payload: WebhookPayload):
             end_msg = f"🎉 <b>[PIPELINE COMPLETE]</b>\nJob <code>{payload.job_id}</code> đã hoàn tất toàn bộ tiến trình!"
             logger.info(end_msg)
             await send_telegram_message(end_msg)
-
+            
+            # --- Thêm Notification cho Frontend ---
+            import state
+            import datetime
+            state.notifications.insert(0, {
+                "id": len(state.notifications) + 1,
+                "message": f"Pipeline đã chạy xong ({payload.notebook_title}). Trạng thái: Thành công",
+                "seen": False,
+                "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
 
 @router.post("/webhook/notebook")
 async def receive_webhook(

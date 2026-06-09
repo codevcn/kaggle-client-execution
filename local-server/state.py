@@ -17,7 +17,9 @@ flow_manager = FlowExecutionManager()
 # URL Public của Cloudflare Tunnel (sẽ được cập nhật khi tunnel khởi động)
 cloudflare_url: str | None = None
 
-# Danh sách các folder đã tải về từ GDrive URL qua webhook
-# Tự động reset (rỗng) mỗi lần server khởi động lại vì là biến in-memory
-downloaded_folders: list[dict] = []
-# Mỗi entry: { "name": str, "path": str, "source_url": str, "created_at": str }
+
+
+# Danh sách thông báo in-memory
+# Tự động làm sạch khi server restart.
+notifications: list[dict] = []
+# Mỗi entry: { "id": int, "message": str, "seen": bool, "timestamp": str }

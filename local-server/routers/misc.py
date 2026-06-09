@@ -63,10 +63,6 @@ def receive_test_data(payload: TestPayload):
     }
 
 
-@router.get("/api/downloaded-folders")
-def get_downloaded_folders():
-    """Trả về danh sách các folder đã tải về từ GDrive URL (lưu trong bộ nhớ, reset khi server khởi động lại)."""
-    return JSONResponse(content={"folders": state.downloaded_folders})
 
 
 class OpenFolderBody(BaseModel):

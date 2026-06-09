@@ -7,7 +7,7 @@ Endpoints:
 
 from fastapi import APIRouter
 
-from config import FILTERS_DIR
+from config import FILTERS_DIR, FLOW_MODULES_DIR
 
 router = APIRouter(prefix="/api", tags=["filters"])
 
@@ -23,5 +23,18 @@ def get_available_filters():
     return sorted(
         f.stem
         for f in FILTERS_DIR.iterdir()
+        if f.is_file() and f.name.endswith(".py") and f.name != "__init__.py"
+    )
+
+@router.get("/available-flow-modules")
+def get_available_flow_modules():
+    """
+    Quét thư mục src/flow_modules và trả về danh sách tên flow module (stem của .py file).
+    """
+    if not FLOW_MODULES_DIR.exists():
+        return []
+    return sorted(
+        f.stem
+        for f in FLOW_MODULES_DIR.iterdir()
         if f.is_file() and f.name.endswith(".py") and f.name != "__init__.py"
     )

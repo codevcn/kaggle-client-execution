@@ -24,7 +24,7 @@ from fastapi.staticfiles import StaticFiles
 
 from state import flow_manager
 from core.cloudflare import tunnel_manager
-from routers import configs, docs, filters, flows, misc, webhook
+from routers import configs, docs, filters, flows, misc, webhook, notifications
 
 logger = logging.getLogger("local-server")
 
@@ -79,6 +79,7 @@ app.include_router(configs.router)
 app.include_router(filters.router)
 app.include_router(docs.router)
 app.include_router(webhook.router)
+app.include_router(notifications.router)
 
 
 # ─────────────────────────────────────────────

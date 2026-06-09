@@ -1,82 +1,95 @@
-2026-06-07 18:18:26  INFO      🚀 Khởi động Kaggle Client Execution
-2026-06-07 18:18:26  INFO         Config  : D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\configs\base_config.json
-2026-06-07 18:18:26  INFO         Tmp dir : D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp
-2026-06-07 18:18:26  INFO         Log file: D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\runtime.log
-2026-06-07 18:18:26  INFO      🗂️  Tổng số flow: 4
-2026-06-07 18:18:26  INFO      ============================================================
-2026-06-07 18:18:26  INFO      
+2026-06-09 21:57:17  INFO      🚀 Khởi động Kaggle Client Execution
+2026-06-09 21:57:17  INFO         Config  : D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\configs\base_config.json
+2026-06-09 21:57:17  INFO         Tmp dir : D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp
+2026-06-09 21:57:17  INFO         Log file: D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\runtime.log
+2026-06-09 21:57:17  INFO      🗂️  Tổng số flow: 6
+2026-06-09 21:57:17  INFO      ============================================================
+2026-06-09 21:57:17  INFO      
 ════════════════════════════════════════════════════════════
-2026-06-07 18:18:26  INFO      ⏭️  BỎ QUA FLOW 1/4: Tách nhạc nền và lời
-2026-06-07 18:18:26  INFO      ════════════════════════════════════════════════════════════
-2026-06-07 18:18:26  INFO      
+2026-06-09 21:57:17  INFO      ▶  FLOW 1/6: Tách nhạc nền và lời 1
+2026-06-09 21:57:17  INFO         entrance_filters   : ['extract_audio_from_video']
+2026-06-09 21:57:17  INFO        🔍 Chạy 1 entrance filter(s)...
+2026-06-09 21:57:17  INFO        ▶️  [1/1] Chạy filter: extract_audio_from_video.py
+2026-06-09 21:57:17  INFO             [filter:extract_audio_from_video] Đang xóa 1 file cũ trong 'D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\media\audios\4'...
+2026-06-09 21:57:17  INFO             [filter:extract_audio_from_video]   Đã xóa: main-2.wav
+2026-06-09 21:57:17  INFO             [filter:extract_audio_from_video] Làm sạch hoàn tất.
+2026-06-09 21:57:17  INFO             [filter:extract_audio_from_video] Tìm thấy 1 tệp tin video. Bắt đầu quá trình trích xuất âm thanh...
+2026-06-09 21:57:17  INFO             [filter:extract_audio_from_video] Đang xử lý: main-3.mp4 -> main-3.wav
+2026-06-09 21:57:25  INFO             [filter:extract_audio_from_video] Thành công: Đã lưu main-3.wav
+2026-06-09 21:57:25  INFO             [filter:extract_audio_from_video] Hoàn tất toàn bộ quá trình trích xuất.
+2026-06-09 21:57:25  INFO        ✅ Filter 'extract_audio_from_video' hoàn tất.
+2026-06-09 21:57:25  INFO        🌟 Tất cả 1 filter đã chạy xong.
+2026-06-09 21:57:26  INFO         local_data_input   : D:\D-Jobs\ae-B6\TikTok-Beta\\servers\kaggle-client-execution\media\audios\4
+2026-06-09 21:57:26  INFO         gdrive_folder_url  : https://drive.google.com/drive/folders/1YJv6b5toIVqko6u5f7ZKmjwR8xYJtZ7F
+2026-06-09 21:57:26  INFO         rclone_config_path : C:/Users/dell/AppData/Roaming/rclone/rclone.conf
+2026-06-09 21:57:26  INFO         notebook_to_execute: nguyenthanhtrungn21/demucs-split-bgm-vocals-flow  [to_execute=true]
+2026-06-09 21:57:26  INFO         credentials_path   : D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env
+2026-06-09 21:57:26  INFO         Tổng notebooks trong flow: 1 (chỉ 1 được chạy)
+2026-06-09 21:57:26  INFO      ════════════════════════════════════════════════════════════
+2026-06-09 21:57:26  INFO        ✅ Đã load 4 tài khoản Kaggle từ credentials.
+2026-06-09 21:57:26  INFO        📂 Tìm thấy 1 file trong D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\media\audios\4
+2026-06-09 21:57:26  INFO      
+  ── File 1/1: main-3.wav ──
+2026-06-09 21:57:26  INFO        🔗 Tìm thấy rclone remote: [codevcn-dell-pc]
+2026-06-09 21:57:26  INFO        📦 Staging: main-3.wav  →  D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp\_staging_main-3
+2026-06-09 21:57:26  INFO        📤 rclone sync: main-3.wav  →  GDrive folder ID [1YJv6b5toIVqko6u5f7ZKmjwR8xYJtZ7F]
+2026-06-09 21:57:26  INFO             (file cũ trên GDrive sẽ bị xóa)
+2026-06-09 21:57:26  INFO             Lệnh: rclone sync D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp\_staging_main-3 codevcn-dell-pc: --drive-root-folder-id 1YJv6b5toIVqko6u5f7ZKmjwR8xYJtZ7F --config C:/Users/dell/AppData/Roaming/rclone/rclone.conf --progress --stats-one-line --log-level INFO
+2026-06-09 21:57:46  INFO             [rclone stdout]
+0 B / 0 B, -, 0 B/s, ETA -0 B / 221.368 MiB, 0%, 0 B/s, ETA -0 B / 221.368 MiB, 0%, 0 B/s, ETA -572 KiB / 221.368 MiB, 0%, 0 B/s, ETA -9.559 MiB / 221.368 MiB, 4%, 286 KiB/s, ETA 12m38s17.465 MiB / 221.368 MiB, 8%, 286 KiB/s, ETA 12m10s24.125 MiB / 221.368 MiB, 11%, 5.832 MiB/s, ETA 33s32 MiB / 221.368 MiB, 14%, 5.832 MiB/s, ETA 32s40 MiB / 221.368 MiB, 18%, 8 MiB/s, ETA 22s47.934 MiB / 221.368 MiB, 22%, 8 MiB/s, ETA 21s56 MiB / 221.368 MiB, 25%, 9.593 MiB/s, ETA 17s63.590 MiB / 221.368 MiB, 29%, 9.593 MiB/s, ETA 16s69.434 MiB / 221.368 MiB, 31%, 10.598 MiB/s, ETA 14s72 MiB / 221.368 MiB, 33%, 10.598 MiB/s, ETA 14s80 MiB / 221.368 MiB, 36%, 10.286 MiB/s, ETA 13s88 MiB / 221.368 MiB, 40%, 10.286 MiB/s, ETA 12s95.934 MiB / 221.368 MiB, 43%, 11 MiB/s, ETA 11s103.652 MiB / 221.368 MiB, 47%, 11 MiB/s, ETA 10s109.934 MiB / 221.368 MiB, 50%, 11.517 MiB/s, ETA 9s112 MiB / 221.368 MiB, 51%, 11.517 MiB/s, ETA 9s120 MiB / 221.368 MiB, 54%, 11.200 MiB/s, ETA 9s128 MiB / 221.368 MiB, 58%, 11.200 MiB/s, ETA 8s136 MiB / 221.368 MiB, 61%, 11.636 MiB/s, ETA 7s144 MiB / 221.368 MiB, 65%, 11.636 MiB/s, ETA 6s152 MiB / 221.368 MiB, 69%, 12 MiB/s, ETA 5s153.621 MiB / 221.368 MiB, 69%, 12 MiB/s, ETA 5s160.281 MiB / 221.368 MiB, 72%, 11.817 MiB/s, ETA 5s168 MiB / 221.368 MiB, 76%, 11.817 MiB/s, ETA 4s176 MiB / 221.368 MiB, 80%, 12 MiB/s, ETA 3s184 MiB / 221.368 MiB, 83%, 12 MiB/s, ETA 3s191.902 MiB / 221.368 MiB, 87%, 12.267 MiB/s, ETA 2s192.438 MiB / 221.368 MiB, 87%, 12.267 MiB/s, ETA 2s200 MiB / 221.368 MiB, 90%, 12.027 MiB/s, ETA 1s208 MiB / 221.368 MiB, 94%, 12.027 MiB/s, ETA 1s216 MiB / 221.368 MiB, 98%, 12.248 MiB/s, ETA 0s221.368 MiB / 221.368 MiB, 100%, 12.248 MiB/s, ETA 0s221.368 MiB / 221.368 MiB, 100%, 12.318 MiB/s, ETA 0s221.368 MiB / 221.368 MiB, 100%, 12.318 MiB/s, ETA 0s221.368 MiB / 221.368 MiB, 100%, 11.548 MiB/s, ETA 0s
+2026/06/09 21:57:46 INFO  : main-3.wav: Copied (new)
+221.368 MiB / 221.368 MiB, 100%, 11.548 MiB/s, ETA 0s221.368 MiB / 221.368 MiB, 100%, 11.548 MiB/s, ETA 0s
+2026/06/09 21:57:46 INFO  : main-2.wav: Deleted
+221.368 MiB / 221.368 MiB, 100%, 11.548 MiB/s, ETA 0s221.368 MiB / 221.368 MiB, 100%, 11.548 MiB/s, ETA 0s
+2026-06-09 21:57:46  WARNING          [rclone stderr]
+2026/06/09 21:57:46 INFO  :   221.368 MiB / 221.368 MiB, 100%, 11.548 MiB/s, ETA 0s
+2026-06-09 21:57:46  INFO        ✅ Sync thành công: main-3.wav
+2026-06-09 21:57:46  INFO        🔗 GDrive folder: https://drive.google.com/drive/folders/1YJv6b5toIVqko6u5f7ZKmjwR8xYJtZ7F
+2026-06-09 21:57:47  INFO        🧹 Đã xóa staging dir: _staging_main-3
+2026-06-09 21:57:47  INFO        📁 Thư mục tạm: D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp\nguyenthanhtrungn21_demucs-split-bgm-vocals-flow
+2026-06-09 21:57:47  INFO        🔽 [Bước 1] Pull metadata: nguyenthanhtrungn21/demucs-split-bgm-vocals-flow
+2026-06-09 21:57:50  INFO             ✅ Source code and metadata downloaded to D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp\nguyenthanhtrungn21_demucs-split-bgm-vocals-flow
+2026-06-09 21:57:50  INFO        🔽 [Bước 2] Pull notebook code: nguyenthanhtrungn21/demucs-split-bgm-vocals-flow
+2026-06-09 21:57:54  INFO             ✅ Source code downloaded to D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp\nguyenthanhtrungn21_demucs-split-bgm-vocals-flow\demucs-split-bgm-vocals-flow.ipynb
+2026-06-09 21:57:54  INFO        🔧 [Bước 2.5] Patch edit_vars vào notebook: demucs-split-bgm-vocals-flow.ipynb
+2026-06-09 21:57:55  INFO        🔧 Đã patch edit_vars vào cell config (demucs-split-bgm-vocals-flow.ipynb):
+2026-06-09 21:57:55  INFO             CURRENT_JOB_ID = 'demucs-split-bgm-vocals---3b2w9cjJ'
+2026-06-09 21:57:55  INFO             DATA_INPUT_GDRIVE_DIR_URL = 'https://drive.google.com/drive/folders/1YJv6b5toIVqko6u5f7ZKmjwR8xYJtZ7F'
+2026-06-09 21:57:55  INFO             MASTER_CONTROLLER_WEBHOOK_URL = 'https://identified-trivia-barry-safari.trycloudflare.com/webhook/notebook'
+2026-06-09 21:57:55  INFO             MASTER_CONTROLLER_API_KEY = 'b6-remote-server-kaggle-2026'
+2026-06-09 21:57:55  INFO             UPLOAD_DATA_GDRIVE_DIR_PATH = 'codevcn-dell-pc:ae-b6/tiktok-beta-JAPAN/kaggle/split-bridged-data/1/'
+2026-06-09 21:57:55  INFO             🌐 Đã đảm bảo enable_internet = true
+2026-06-09 21:57:55  INFO        🚀 [Bước 3] Push notebook để kích hoạt chạy: nguyenthanhtrungn21/demucs-split-bgm-vocals-flow
+2026-06-09 21:58:00  INFO             ✅ Kernel version 39 successfully pushed.  Please check progress at https://www.kaggle.com/code/nguyenthanhtrungn21/demucs-split-bgm-vocals-flow
+2026-06-09 21:58:00  INFO        🎉 Notebook kích hoạt thành công: nguyenthanhtrungn21/demucs-split-bgm-vocals-flow
+2026-06-09 21:58:00  INFO        🧹 Đã xóa thư mục tạm: nguyenthanhtrungn21_demucs-split-bgm-vocals-flow
+2026-06-09 21:58:00  INFO        ✅ Hoàn tất file 1/1: main-3.wav
+2026-06-09 21:58:00  INFO      
+  📊 Flow 1 hoàn tất — kết quả xử lý 1 file:
+2026-06-09 21:58:00  INFO           ✅ Thành công : 1/1
+2026-06-09 21:58:00  INFO           ❌ Thất bại   : 0/1
+2026-06-09 21:58:00  INFO      
 ════════════════════════════════════════════════════════════
-2026-06-07 18:18:26  INFO      ⏭️  BỎ QUA FLOW 2/4: Tạo phụ đề & lồng tiếng cho video
-2026-06-07 18:18:26  INFO      ════════════════════════════════════════════════════════════
-2026-06-07 18:18:26  INFO      
+2026-06-09 21:58:00  INFO      ⏭️  BỎ QUA FLOW 2/6: Tạo phụ đề & lồng tiếng cho video 1
+2026-06-09 21:58:00  INFO      ════════════════════════════════════════════════════════════
+2026-06-09 21:58:00  INFO      
 ════════════════════════════════════════════════════════════
-2026-06-07 18:18:26  INFO      ⏭️  BỎ QUA FLOW 3/4: Gắn each-word cho music video
-2026-06-07 18:18:26  INFO      ════════════════════════════════════════════════════════════
-2026-06-07 18:18:26  INFO      
+2026-06-09 21:58:00  INFO      ⏭️  BỎ QUA FLOW 3/6: Tạo phụ đề & lồng tiếng cho video 2
+2026-06-09 21:58:00  INFO      ════════════════════════════════════════════════════════════
+2026-06-09 21:58:00  INFO      
 ════════════════════════════════════════════════════════════
-2026-06-07 18:18:26  INFO      ▶  FLOW 4/4: Align lyrics khớp với bài hát
-2026-06-07 18:18:26  INFO         entrance_filters   : ['check_valid_file_pairs']
-2026-06-07 18:18:26  INFO        🔍 Chạy 1 entrance filter(s)...
-2026-06-07 18:18:26  INFO        ▶️  [1/1] Chạy filter: check_valid_file_pairs.py
-2026-06-07 18:18:26  INFO             [filter:check_valid_file_pairs] [filter:check_valid_file_pairs]  ============================================================
-2026-06-07 18:18:26  INFO             [filter:check_valid_file_pairs] [filter:check_valid_file_pairs]  🚦 BẮT ĐẦU FILTER: check_valid_file_pairs
-2026-06-07 18:18:26  INFO             [filter:check_valid_file_pairs] [filter:check_valid_file_pairs]     LOCAL_FOLDER_PATH_TO_CHECK : D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\media\others\music-videos
-2026-06-07 18:18:26  INFO             [filter:check_valid_file_pairs] [filter:check_valid_file_pairs]  ============================================================
-2026-06-07 18:18:26  INFO             [filter:check_valid_file_pairs] [filter:check_valid_file_pairs]  ✅ Tìm thấy 1 cặp file hợp lệ:
-2026-06-07 18:18:26  INFO             [filter:check_valid_file_pairs] [filter:check_valid_file_pairs]     • Tướng Quân/Tướng Quân
-2026-06-07 18:18:26  INFO             [filter:check_valid_file_pairs] [filter:check_valid_file_pairs]  ✅ FILTER HOÀN TẤT — Tất cả file đều có đủ cặp hợp lệ.
-2026-06-07 18:18:26  INFO        ✅ Filter 'check_valid_file_pairs' hoàn tất.
-2026-06-07 18:18:26  INFO        🌟 Tất cả 1 filter đã chạy xong.
-2026-06-07 18:18:26  INFO         local_data_input   : D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\media\others\music-videos
-2026-06-07 18:18:26  INFO         gdrive_folder_url  : https://drive.google.com/drive/folders/1xFg-qzNme60FWRsHYSDCILUdndDzmnxb
-2026-06-07 18:18:26  INFO         rclone_config_path : C:/Users/dell/AppData/Roaming/rclone/rclone.conf
-2026-06-07 18:18:26  INFO         notebook_to_execute: hipbiquang/align-music-lyrics-flow  [to_execute=true]
-2026-06-07 18:18:26  INFO         credentials_path   : D:/D-Jobs/ae-B6/TikTok-Beta/servers/kaggle-client-execution/.env
-2026-06-07 18:18:26  INFO         Tổng notebooks trong flow: 1 (chỉ 1 được chạy)
-2026-06-07 18:18:26  INFO      ════════════════════════════════════════════════════════════
-2026-06-07 18:18:26  INFO        ✅ Đã load 4 tài khoản Kaggle từ credentials.
-2026-06-07 18:18:26  INFO        📂 Tìm thấy 1 work (sub-dir) trong D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\media\others\music-videos
-2026-06-07 18:18:26  INFO      
-  ── Work 1/1: Tướng Quân ──
-2026-06-07 18:18:26  INFO        🔗 Tìm thấy rclone remote: [codevcn-dell-pc]
-2026-06-07 18:18:26  INFO        📤 rclone sync: Tướng Quân (dir)  →  GDrive folder ID [1xFg-qzNme60FWRsHYSDCILUdndDzmnxb]
-2026-06-07 18:18:26  INFO             (file/thư mục cũ trên GDrive sẽ bị xóa để đồng bộ)
-2026-06-07 18:18:26  INFO             Lệnh: rclone sync D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\media\others\music-videos\Tướng Quân codevcn-dell-pc: --drive-root-folder-id 1xFg-qzNme60FWRsHYSDCILUdndDzmnxb --config C:/Users/dell/AppData/Roaming/rclone/rclone.conf --progress --stats-one-line --log-level INFO
-2026-06-07 18:18:27  INFO             [rclone stdout]
-0 B / 0 B, -, 0 B/s, ETA -
-2026/06/07 18:18:27 INFO  : There was nothing to transfer
-0 B / 0 B, -, 0 B/s, ETA -0 B / 0 B, -, 0 B/s, ETA -
-2026-06-07 18:18:27  WARNING          [rclone stderr]
-2026/06/07 18:18:27 INFO  :           0 B / 0 B, -, 0 B/s, ETA -
-2026-06-07 18:18:27  INFO        ✅ Sync thành công: Tướng Quân
-2026-06-07 18:18:27  INFO        🔗 GDrive folder: https://drive.google.com/drive/folders/1xFg-qzNme60FWRsHYSDCILUdndDzmnxb
-2026-06-07 18:18:27  INFO        📁 Thư mục tạm: D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp\hipbiquang_align-music-lyrics-flow
-2026-06-07 18:18:27  INFO        🔽 [Bước 1] Pull metadata: hipbiquang/align-music-lyrics-flow
-2026-06-07 18:18:31  INFO             ✅ Source code and metadata downloaded to D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp\hipbiquang_align-music-lyrics-flow
-2026-06-07 18:18:31  INFO        🔽 [Bước 2] Pull notebook code: hipbiquang/align-music-lyrics-flow
-2026-06-07 18:18:35  INFO             ✅ Source code downloaded to D:\D-Jobs\ae-B6\TikTok-Beta\servers\kaggle-client-execution\tmp\hipbiquang_align-music-lyrics-flow\align-music-lyrics-flow.ipynb
-2026-06-07 18:18:35  INFO        🔧 [Bước 2.5] Patch edit_vars vào notebook: align-music-lyrics-flow.ipynb
-2026-06-07 18:18:36  INFO        🔧 Đã patch edit_vars vào cell config (align-music-lyrics-flow.ipynb):
-2026-06-07 18:18:36  INFO             CURRENT_JOB_ID = 'align-music-lyrics-01'
-2026-06-07 18:18:36  INFO             DATA_INPUT_GDRIVE_DIR_LINK = 'https://drive.google.com/drive/folders/1xFg-qzNme60FWRsHYSDCILUdndDzmnxb'
-2026-06-07 18:18:36  INFO             MASTER_CONTROLLER_WEBHOOK_URL = 'https://ten-corresponding-nationally-cruz.trycloudflare.com/webhook/notebook'
-2026-06-07 18:18:36  INFO             MASTER_CONTROLLER_API_KEY = 'b6-remote-server-kaggle-2026'
-2026-06-07 18:18:36  INFO             🌐 Đã đảm bảo enable_internet = true
-2026-06-07 18:18:36  INFO        🚀 [Bước 3] Push notebook để kích hoạt chạy: hipbiquang/align-music-lyrics-flow
-2026-06-07 18:18:40  INFO             ✅ Kernel version 6 successfully pushed.  Please check progress at https://www.kaggle.com/code/hipbiquang/align-music-lyrics-flow
-2026-06-07 18:18:40  INFO        🎉 Notebook kích hoạt thành công: hipbiquang/align-music-lyrics-flow
-2026-06-07 18:18:40  INFO        🧹 Đã xóa thư mục tạm: hipbiquang_align-music-lyrics-flow
-2026-06-07 18:18:40  INFO        ✅ Hoàn tất work 1/1: Tướng Quân
-2026-06-07 18:18:40  INFO      
-  📊 Flow 4 hoàn tất — kết quả xử lý 1 work:
-2026-06-07 18:18:40  INFO           ✅ Thành công : 1/1
-2026-06-07 18:18:40  INFO           ❌ Thất bại   : 0/1
-2026-06-07 18:18:40  INFO      
+2026-06-09 21:58:00  INFO      ⏭️  BỎ QUA FLOW 4/6: Tạo phụ đề & lồng tiếng cho video 3
+2026-06-09 21:58:00  INFO      ════════════════════════════════════════════════════════════
+2026-06-09 21:58:00  INFO      
 ════════════════════════════════════════════════════════════
-2026-06-07 18:18:40  INFO      🏁 Đã xử lý xong tất cả các flow.
-2026-06-07 18:18:40  INFO      ════════════════════════════════════════════════════════════
+2026-06-09 21:58:00  INFO      ⏭️  BỎ QUA FLOW 5/6: Gắn each-word cho music video
+2026-06-09 21:58:00  INFO      ════════════════════════════════════════════════════════════
+2026-06-09 21:58:00  INFO      
+════════════════════════════════════════════════════════════
+2026-06-09 21:58:00  INFO      ⏭️  BỎ QUA FLOW 6/6: Align lyrics khớp với bài hát
+2026-06-09 21:58:00  INFO      ════════════════════════════════════════════════════════════
+2026-06-09 21:58:00  INFO      
+════════════════════════════════════════════════════════════
+2026-06-09 21:58:00  INFO      🏁 Đã xử lý xong tất cả các flow.
+2026-06-09 21:58:00  INFO      ════════════════════════════════════════════════════════════
 

@@ -41,6 +41,7 @@ BASE_DIR: Path = LOCAL_SERVER_DIR.parent
 MANAGE_HTML_PATH: Path = LOCAL_SERVER_DIR / "manage.html"
 CONFIG_JSON_PATH: Path = BASE_DIR / "configs" / "base_config.json"
 FILTERS_DIR: Path = BASE_DIR / "src" / "filters"
+FLOW_MODULES_DIR: Path = BASE_DIR / "src" / "flow_modules"
 DOCS_DIR: Path = BASE_DIR / "doc"
 
 
